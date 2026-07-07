@@ -1,3 +1,16 @@
+# Copyright (c) 2026 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Analyst1 SOAR App - SDK Version
 
 This app implements investigative actions on the Analyst1 platform.
@@ -6,7 +19,7 @@ This app implements investigative actions on the Analyst1 platform.
 import ipaddress
 import json
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from soar_sdk.abstract import SOARClient
@@ -119,8 +132,8 @@ class Analyst1Client:
         self.asset = asset
         self.base_url = asset.base_url.rstrip("/")
         self._auth_state = auth_state  # Persistent state from SDK
-        self._access_token: Optional[str] = None
-        self._token_expires_at: Optional[datetime] = None
+        self._access_token: str | None = None
+        self._token_expires_at: datetime | None = None
 
         # Determine auth method and API version
         if asset.client_id and asset.client_secret:
@@ -289,7 +302,7 @@ class Analyst1Client:
         """Make a POST request."""
         return self._make_request("POST", endpoint, **kwargs)
 
-    def indicator_match(self, value: str, indicator_type: str) -> Optional[dict[str, Any]]:
+    def indicator_match(self, value: str, indicator_type: str) -> dict[str, Any] | None:
         """Look up an indicator in Analyst1."""
         response = self.get("/indicator/match/", params={"value": value, "type": indicator_type})
 
@@ -348,24 +361,24 @@ class IndicatorOutput(ActionOutput):
     message: str = ""
 
     # Primary indicator fields
-    id: Optional[int] = None
-    type: Optional[str] = None
-    active: Optional[bool] = None
-    verified: Optional[bool] = None
-    tasked: Optional[bool] = None
-    reportCount: Optional[int] = None
-    hitCount: Optional[int] = None
-    firstHit: Optional[str] = None
-    lastHit: Optional[str] = None
-    status: Optional[str] = None
-    tlp: Optional[str] = None
-    base_url: Optional[str] = None
+    id: int | None = None
+    type: str | None = None
+    active: bool | None = None
+    verified: bool | None = None
+    tasked: bool | None = None
+    reportCount: int | None = None
+    hitCount: int | None = None
+    firstHit: str | None = None
+    lastHit: str | None = None
+    status: str | None = None
+    tlp: str | None = None
+    base_url: str | None = None
 
     # Value as string (the actual indicator value)
-    indicator_value: Optional[str] = None
+    indicator_value: str | None = None
 
     # Complex data stored as JSON strings for downstream processing
-    raw_data: Optional[str] = None  # Full API response as JSON
+    raw_data: str | None = None  # Full API response as JSON
 
 
 # =============================================================================
@@ -475,7 +488,7 @@ class LookupHttpRequestParams(Params):
 # =============================================================================
 
 
-def _safe_int(value: Any) -> Optional[int]:
+def _safe_int(value: Any) -> int | None:
     """Safely convert value to int, returning None if not possible."""
     if value is None:
         return None
@@ -485,7 +498,7 @@ def _safe_int(value: Any) -> Optional[int]:
         return None
 
 
-def _safe_str(value: Any) -> Optional[str]:
+def _safe_str(value: Any) -> str | None:
     """Safely convert value to string, returning None if not possible."""
     if value is None:
         return None
@@ -495,7 +508,7 @@ def _safe_str(value: Any) -> Optional[str]:
         return None
 
 
-def _safe_bool(value: Any) -> Optional[bool]:
+def _safe_bool(value: Any) -> bool | None:
     """Safely convert value to bool, returning None if not possible."""
     if value is None:
         return None
@@ -827,7 +840,7 @@ class CheckEvidenceStatusParams(Params):
 
 class CheckEvidenceStatusOutput(ActionOutput):
     message: str = ""
-    id: Optional[int] = None
+    id: int | None = None
 
 
 @app.action(
@@ -935,10 +948,10 @@ class EvidenceItemOutput(ActionOutput):
     """Single evidence item."""
 
     id: int
-    title: Optional[str] = None
-    type: Optional[str] = None
-    tlp: Optional[str] = None
-    analyzedDate: Optional[str] = None
+    title: str | None = None
+    type: str | None = None
+    tlp: str | None = None
+    analyzedDate: str | None = None
 
 
 class GetEvidenceOutput(ActionOutput):
