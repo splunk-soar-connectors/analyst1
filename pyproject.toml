@@ -49,7 +49,7 @@ required-environments = [
 # Ruff linting
 [tool.ruff]
 line-length = 145
-target-version = "py39"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [ # Auto-fixable rules only
