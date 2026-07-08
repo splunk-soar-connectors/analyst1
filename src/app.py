@@ -499,15 +499,18 @@ def _lenient_str(value: Any) -> str | None:
 
 
 def _links_to_list(value: Any) -> Any:
-    """Coerce the 1_1 object-form `links` serialization to the classic list form.
+    """Coerce the API's object-form `links` serialization to the classic list form.
 
-    The 1_1 (OAuth) API serializes links as an object
-    ({"self": {"href": ...}, "evidence": {...}, ...}); the 1_0 API and the
-    classic manifest contract use a list of {rel, href}. Coerce the object
-    form to the list form, preserving insertion order, so playbooks see an
-    identical links.* list under both auth modes. hrefs are emitted verbatim
-    (no XSOAR-style URL rewriting). Anything else passes through to normal
-    validation (lenient posture; never raise here).
+    The live API serializes links as a rel-keyed object
+    ({"self": {"href": ...}, "evidence": {...}, ...}) under BOTH auth modes —
+    verified 2026-07-07 against 1_1 (OAuth) and 1_0 (basic) on
+    /indicator/match, /indicator/{id}, and /actor/{id}; the OpenAPI spec's
+    Links definition is likewise an object. The list of {rel, href} exists
+    only in the classic manifest contract (and XSOAR's code/test fixtures),
+    so coerce the object form to the list form, preserving insertion order,
+    to make the declared links.* datapaths actually resolve. hrefs are
+    emitted verbatim (no XSOAR-style URL rewriting). Anything else passes
+    through to normal validation (lenient posture; never raise here).
     """
     if isinstance(value, dict):
         return [{"rel": rel, "href": item.get("href") if isinstance(item, dict) else None} for rel, item in value.items()]
