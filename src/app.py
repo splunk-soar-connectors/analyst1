@@ -39,16 +39,30 @@ logger = getLogger()
 # Constants
 # =============================================================================
 
+# Friendly display names for enrichmentResults.*.type. Keys are the
+# EnrichmentResultResource type enum from the Analyst1 OpenAPI 2.15.0 spec
+# (SCREAMING_SNAKE; confirmed live, e.g. indicator 2144 sends
+# "WHOIS_IP_REGISTRATION"). The classic app keyed this map on camelCase, so
+# it never matched an API value and the friendly name was dead code -- fixed
+# here rather than preserved. Unknown types fall back to the raw enum.
 ENRICHMENT_RESULTS_NAME_MAP = {
-    "whoisDomainRegistration": "WHOIS Domain Registration",
-    "whoisIPRegistration": "WHOIS IP Registration",
-    "domainTools": "Domain Tools",
-    "virusTotal": "VirusTotal",
-    "deepSight": "DeepSight",
-    "recordedfuture": "Recorded Future",
-    "sansDshield": "SANS DShield",
-    "shadowserver": "Shadowserver",
-    "sipc": "Symantec SIPC",
+    "WHOIS_DOMAIN_REGISTRATION": "WHOIS Domain Registration",
+    "WHOIS_IP_REGISTRATION": "WHOIS IP Registration",
+    "DOMAIN_TOOLS": "Domain Tools",
+    "VIRUS_TOTAL": "VirusTotal",
+    "DEEP_SIGHT": "DeepSight",
+    "RECORDED_FUTURE_V1": "Recorded Future",
+    "RECORDED_FUTURE_V2": "Recorded Future",
+    "SANS_DSHIELD": "SANS DShield",
+    "SHADOWSERVER": "Shadowserver",
+    "SIPC": "Symantec SIPC",
+    "INTEL_471_V1": "Intel 471",
+    "GREY_NOISE_V3_COMMUNITY": "GreyNoise Community",
+    "GREY_NOISE_V2_ENTERPRISE": "GreyNoise Enterprise",
+    "FLASHPOINT_V1": "Flashpoint",
+    "MANDIANT_V4": "Mandiant",
+    "DOMAINTOOLS_IRIS_ENRICH_V1": "DomainTools Iris",
+    "DRAGOS_WORLDVIEW": "Dragos WorldView",
 }
 
 EVIDENCE_POST_FIELD_MAP = {
