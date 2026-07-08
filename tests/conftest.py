@@ -93,6 +93,14 @@ ACTOR_ID = 7
 MALWARE_ID = 55
 BY_ID_ERROR_ID = 666
 
+# Sensors: the fixture sensor id; a missing id (404), an id whose sub-resources
+# answer 500, and an id whose taskings diff answers the live "no finalized
+# versions" 500 (a config-less sensor answers 500, NOT 404).
+SENSOR_ID = 401
+MISSING_SENSOR_ID = 999
+ERROR_SENSOR_ID = 666
+NO_FINALIZED_SENSOR_ID = 777
+
 
 def basic_asset() -> dict[str, Any]:
     """Asset configuration for Basic auth (1_0 API)."""
@@ -146,12 +154,17 @@ class MockAnalyst1API:
         self.batch_check = load_fixture("batch_check.json")
         self.actor_resource = load_fixture("actor_resource.json")
         self.malware_resource = load_fixture("malware_resource.json")
+        self.sensors_pages = load_fixture("sensors_pages.json")
+        self.sensor_taskings = load_fixture("sensor_taskings.json")
+        self.sensor_diff = load_fixture("sensor_diff.json")
+        self.sensor_config_text = (FIXTURES_DIR / "sensor_config.txt").read_text()
         # Behavior knobs
         self.token_response_status = 200
         self.token_calls = 0
         self.api_401_remaining = 0  # the next N /api/ requests get a 401
         self.api_401_always = False  # every /api/ request gets a 401
         self.evidence_synthetic_total_pages: int | None = None  # advertise N pages of 2 synthetic rows each
+        self.sensors_synthetic_total_pages: int | None = None  # advertise N pages of 2 synthetic rows each
 
     def api_requests(self, path_fragment: str) -> list[dict[str, Any]]:
         """Recorded requests whose path contains the given fragment."""
@@ -165,6 +178,10 @@ class MockAnalyst1API:
     def evidence_list_requests(self) -> list[dict[str, Any]]:
         return [r for r in self.requests if r["method"] == "GET" and r["path"].endswith("/evidence")]
 
+    @property
+    def sensors_list_requests(self) -> list[dict[str, Any]]:
+        return [r for r in self.requests if r["method"] == "GET" and r["path"].endswith("/sensors")]
+
     def handler(self, request: httpx.Request) -> httpx.Response:
         content = request.read()
         record = {
@@ -174,6 +191,7 @@ class MockAnalyst1API:
             "params": dict(request.url.params),
             "headers": dict(request.headers),
             "content": content,
+            "timeout": request.extensions.get("timeout"),  # per-request httpx timeout, as {connect, read, write, pool}
         }
         self.requests.append(record)
 
@@ -189,6 +207,8 @@ class MockAnalyst1API:
         segments = [segment for segment in request.url.path.split("/") if segment]  # e.g. /api/1_0/actor/7
         if len(segments) == 4 and segments[2] in ("indicator", "actor", "malware"):
             return self._handle_by_id(segments[2], segments[3])
+        if len(segments) >= 3 and segments[2] == "sensors":
+            return self._handle_sensors(segments, record["params"])
         if "/evidence/uploadStatus/" in request.url.path:
             if request.url.path.endswith(f"/{MISSING_STATUS_UUID}"):
                 return httpx.Response(404, json=NOTFOUND_BODY)
@@ -218,6 +238,45 @@ class MockAnalyst1API:
         if value == HTML_ERROR_VALUE:
             return httpx.Response(500, text=HTML_ERROR_BODY, headers={"Content-Type": "text/html"})
         return httpx.Response(200, json=self.match_map.get(value, self.match_default))
+
+    def _handle_sensors(self, segments: list[str], params: dict[str, Any]) -> httpx.Response:
+        if len(segments) == 3:  # GET /sensors (paged list)
+            return self._handle_sensors_list(params)
+        sensor_id, tail = segments[3], segments[4:]
+        if sensor_id == str(MISSING_SENSOR_ID):
+            return httpx.Response(404, json=NOTFOUND_BODY)
+        if len(tail) == 3 and tail[:2] == ["taskings", "diff"]:
+            if sensor_id == str(NO_FINALIZED_SENSOR_ID):
+                return httpx.Response(500, json={"message": "No finalized versions found for this sensor."})
+            if sensor_id == str(ERROR_SENSOR_ID):
+                return httpx.Response(500, json={"message": "Internal server error"})
+            return httpx.Response(200, json=self.sensor_diff)
+        if tail == ["taskings", "config"]:
+            if sensor_id == str(ERROR_SENSOR_ID):
+                return httpx.Response(500, json={"message": "Internal server error"})
+            return httpx.Response(200, text=self.sensor_config_text, headers={"Content-Type": "text/plain"})
+        if tail == ["taskings"]:
+            if sensor_id == str(ERROR_SENSOR_ID):
+                return httpx.Response(500, json={"message": "Internal server error"})
+            return httpx.Response(200, json=self.sensor_taskings)
+        raise AssertionError(f"unmocked sensors request: /{'/'.join(segments)}")
+
+    def _handle_sensors_list(self, params: dict[str, Any]) -> httpx.Response:
+        page = int(params.get("page", "1"))
+        if self.sensors_synthetic_total_pages is not None:
+            total_pages = self.sensors_synthetic_total_pages
+            results = [{"id": page * 10 + 1}, {"id": page * 10 + 2}] if 1 <= page <= total_pages else []
+            return httpx.Response(200, json={"results": results, "totalPages": total_pages, "totalResults": total_pages * 2})
+        pages = self.sensors_pages["pages"]
+        results = pages[page - 1] if 1 <= page <= len(pages) else []
+        return httpx.Response(
+            200,
+            json={
+                "results": results,
+                "totalPages": self.sensors_pages["totalPages"],
+                "totalResults": self.sensors_pages["totalResults"],
+            },
+        )
 
     def _handle_by_id(self, resource: str, resource_id: str) -> httpx.Response:
         if resource_id == str(BY_ID_ERROR_ID):

@@ -39,7 +39,11 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [get malware by id](#action-get-malware-by-id) - Fetch a malware family from the Analyst1 platform by its Analyst1 ID <br>
 [upload evidence file](#action-upload-evidence-file) - Upload file from vault to Analyst1 as evidence file <br>
 [check evidence status](#action-check-evidence-status) - Check the status of an evidence file upload <br>
-[get evidence](#action-get-evidence) - Browse and fetch evidence resources.
+[get evidence](#action-get-evidence) - Browse and fetch evidence resources. <br>
+[get sensors](#action-get-sensors) - Browse and fetch sensors from the Analyst1 platform <br>
+[get sensor taskings](#action-get-sensor-taskings) - Fetch the indicators and rules currently tasked to an Analyst1 sensor <br>
+[get sensor config](#action-get-sensor-config) - Fetch an Analyst1 sensor's current configuration file and store it in the vault <br>
+[get sensor diff](#action-get-sensor-diff) - Fetch the tasking differences between an Analyst1 sensor config version and the latest version
 
 ## action: 'test connectivity'
 
@@ -1880,6 +1884,188 @@ action_result.parameter.analyzed_date_from | string | | |
 action_result.parameter.analyzed_date_to | string | | |
 action_result.parameter.nominated_for_incident | boolean | | |
 action_result.parameter.nominated_for_report | boolean | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get sensors'
+
+Browse and fetch sensors from the Analyst1 platform
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**page** | optional | The specific page number to retrieve (1-indexed). If provided, only that single page will be returned. If not provided, all pages will be retrieved up to a 10 page limit. | numeric | |
+**page_size** | optional | The number of sensors to return per page. | numeric | |
+**type** | optional | Filter results based on sensor type. | string | |
+**org** | optional | Filter results based on the sensor's organization ID. | numeric | |
+**logical_location** | optional | Filter results based on the sensor's logical location. | string | |
+**desc_sort** | optional | The sort direction. True for a descending sort, false for a ascending sort. | boolean | |
+**sort_by** | optional | The value to sort results on. | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.page | numeric | | |
+action_result.parameter.page_size | numeric | | |
+action_result.parameter.type | string | | |
+action_result.parameter.org | numeric | | |
+action_result.parameter.logical_location | string | | |
+action_result.parameter.desc_sort | boolean | | |
+action_result.parameter.sort_by | string | | |
+action_result.data.\*.id | numeric | | |
+action_result.data.\*.name | string | | |
+action_result.data.\*.logicalLocation | string | | |
+action_result.data.\*.org.id | numeric | | |
+action_result.data.\*.org.name | string | | |
+action_result.data.\*.type | string | | |
+action_result.data.\*.currentVersionNumber | numeric | | |
+action_result.data.\*.latestConfigVersionNumber | numeric | | |
+action_result.data.\*.links.\*.href | string | `url` | |
+action_result.data.\*.links.\*.rel | string | | |
+action_result.summary.total_sensors | numeric | | |
+action_result.summary.pages_processed | numeric | | |
+action_result.summary.total_pages | numeric | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get sensor taskings'
+
+Fetch the indicators and rules currently tasked to an Analyst1 sensor
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**sensor_id** | required | Analyst1 sensor ID | numeric | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.sensor_id | numeric | | |
+action_result.data.\*.id | numeric | | |
+action_result.data.\*.version | numeric | | |
+action_result.data.\*.indicators.\*.id | numeric | | |
+action_result.data.\*.indicators.\*.type | string | | |
+action_result.data.\*.indicators.\*.value | string | | |
+action_result.data.\*.indicators.\*.classification | string | | |
+action_result.data.\*.indicators.\*.fileHashes | string | | |
+action_result.data.\*.indicators.\*.links.\*.href | string | `url` | |
+action_result.data.\*.indicators.\*.links.\*.rel | string | | |
+action_result.data.\*.rules.\*.id | numeric | | |
+action_result.data.\*.rules.\*.versionNumber | numeric | | |
+action_result.data.\*.rules.\*.signature | string | | |
+action_result.data.\*.rules.\*.classification | string | | |
+action_result.data.\*.rules.\*.links.\*.href | string | `url` | |
+action_result.data.\*.rules.\*.links.\*.rel | string | | |
+action_result.data.\*.links.\*.href | string | `url` | |
+action_result.data.\*.links.\*.rel | string | | |
+action_result.summary.version | numeric | | |
+action_result.summary.indicator_count | numeric | | |
+action_result.summary.rule_count | numeric | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get sensor config'
+
+Fetch an Analyst1 sensor's current configuration file and store it in the vault
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**sensor_id** | required | Analyst1 sensor ID | numeric | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.sensor_id | numeric | | |
+action_result.data.\*.sensor_id | numeric | | |
+action_result.data.\*.vault_id | string | `vault id` | |
+action_result.data.\*.file_name | string | | |
+action_result.data.\*.config_text | string | | |
+action_result.summary.vault_id | string | | |
+action_result.summary.file_name | string | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get sensor diff'
+
+Fetch the tasking differences between an Analyst1 sensor config version and the latest version
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**sensor_id** | required | Analyst1 sensor ID | numeric | |
+**version** | required | The sensor config version to diff against the latest version | numeric | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.sensor_id | numeric | | |
+action_result.parameter.version | numeric | | |
+action_result.data.\*.id | numeric | | |
+action_result.data.\*.version | numeric | | |
+action_result.data.\*.latestVersion | numeric | | |
+action_result.data.\*.indicatorsAdded.\*.id | numeric | | |
+action_result.data.\*.indicatorsAdded.\*.type | string | | |
+action_result.data.\*.indicatorsAdded.\*.value | string | | |
+action_result.data.\*.indicatorsAdded.\*.classification | string | | |
+action_result.data.\*.indicatorsAdded.\*.fileHashes | string | | |
+action_result.data.\*.indicatorsAdded.\*.links.\*.href | string | `url` | |
+action_result.data.\*.indicatorsAdded.\*.links.\*.rel | string | | |
+action_result.data.\*.indicatorsRemoved.\*.id | numeric | | |
+action_result.data.\*.indicatorsRemoved.\*.type | string | | |
+action_result.data.\*.indicatorsRemoved.\*.value | string | | |
+action_result.data.\*.indicatorsRemoved.\*.classification | string | | |
+action_result.data.\*.indicatorsRemoved.\*.fileHashes | string | | |
+action_result.data.\*.indicatorsRemoved.\*.links.\*.href | string | `url` | |
+action_result.data.\*.indicatorsRemoved.\*.links.\*.rel | string | | |
+action_result.data.\*.rulesAdded.\*.id | numeric | | |
+action_result.data.\*.rulesAdded.\*.versionNumber | numeric | | |
+action_result.data.\*.rulesAdded.\*.signature | string | | |
+action_result.data.\*.rulesAdded.\*.classification | string | | |
+action_result.data.\*.rulesAdded.\*.links.\*.href | string | `url` | |
+action_result.data.\*.rulesAdded.\*.links.\*.rel | string | | |
+action_result.data.\*.rulesRemoved.\*.id | numeric | | |
+action_result.data.\*.rulesRemoved.\*.versionNumber | numeric | | |
+action_result.data.\*.rulesRemoved.\*.signature | string | | |
+action_result.data.\*.rulesRemoved.\*.classification | string | | |
+action_result.data.\*.rulesRemoved.\*.links.\*.href | string | `url` | |
+action_result.data.\*.rulesRemoved.\*.links.\*.rel | string | | |
+action_result.data.\*.links.\*.href | string | `url` | |
+action_result.data.\*.links.\*.rel | string | | |
+action_result.summary.version | numeric | | |
+action_result.summary.latest_version | numeric | | |
+action_result.summary.indicators_added | numeric | | |
+action_result.summary.indicators_removed | numeric | | |
+action_result.summary.rules_added | numeric | | |
+action_result.summary.rules_removed | numeric | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 

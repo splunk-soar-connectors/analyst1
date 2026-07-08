@@ -93,7 +93,11 @@ class Analyst1AuthError(Analyst1Error):
 
 
 class Analyst1APIError(Analyst1Error):
-    """API error from Analyst1."""
+    """API error from Analyst1; `status` carries the HTTP status when one was received."""
+
+    def __init__(self, message: str, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 # =============================================================================
@@ -300,7 +304,7 @@ class Analyst1Client:
                 error_msg += f", Response: {response.text}"
             except Exception:
                 pass
-            raise Analyst1APIError(error_msg)
+            raise Analyst1APIError(error_msg, status=response.status_code)
 
         if not response.text:
             return {}
@@ -370,6 +374,70 @@ class Analyst1Client:
         """Fetch a malware family by its Analyst1 id; None when not found (404)."""
         resp = self.get(f"/malware/{malware_id}")
         return resp if resp and resp.get("id") else None
+
+    def get_sensors(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Fetch one page of sensors (paged SensorListResultsPage envelope)."""
+        resp = self.get("/sensors", params=params)
+        if not isinstance(resp, dict):
+            return {}
+        # Live /sensors rows carry `_links` (underscore, rel-keyed object),
+        # which Pydantic cannot declare as a field name. Rename `_links` ->
+        # `links` on each row before validation so _links_to_list can
+        # normalize it.
+        for row in resp.get("results") or []:
+            if isinstance(row, dict) and "_links" in row and "links" not in row:
+                row["links"] = row.pop("_links")
+        return resp
+
+    def get_sensor_taskings(self, sensor_id: int) -> dict[str, Any]:
+        """Fetch a sensor's current taskings; {} when not found (404).
+
+        Extended per-request timeout for XSOAR parity: tasking fetches can be
+        slow.
+        """
+        resp = self.get(f"/sensors/{sensor_id}/taskings", timeout=200.0)
+        return resp if isinstance(resp, dict) else {}
+
+    def get_sensor_config_text(self, sensor_id: int) -> str:
+        """Fetch a sensor's config file as raw text; "" when not found (404).
+
+        The endpoint returns a text config file, not JSON, so this bypasses
+        _make_request's JSON parsing (one-shot; no 401-retry: config is a
+        rare manual action and the OAuth token is normally warm).
+        """
+        url = f"{self.base_url}/api/{self._api_version}/sensors/{sensor_id}/taskings/config"
+        auth_kwargs = self._get_auth()
+        kwargs: dict[str, Any] = {}
+        if "headers" in auth_kwargs:
+            kwargs["headers"] = auth_kwargs["headers"]
+        if "auth" in auth_kwargs:
+            kwargs["auth"] = auth_kwargs["auth"]
+
+        try:
+            response = self._client.request("GET", url, **kwargs)
+        except Exception as e:
+            raise Analyst1APIError(f"Error connecting to server: {e!s}") from e
+
+        if response.status_code == 404:
+            return ""
+        if response.status_code >= 400:
+            raise Analyst1APIError(f"API error. Status: {response.status_code}, Response: {response.text}", status=response.status_code)
+        return response.text
+
+    def get_sensor_diff(self, sensor_id: int, version: int) -> dict[str, Any]:
+        """Fetch the tasking diff between a sensor config version and the latest; {} when not found.
+
+        A sensor with no finalized config version answers HTTP 500 with "No
+        finalized versions found..." (verified live), NOT a 404 -- treated as
+        empty, not an error. Extended per-request timeout for XSOAR parity.
+        """
+        try:
+            resp = self.get(f"/sensors/{sensor_id}/taskings/diff/{version}", timeout=200.0)
+        except Analyst1APIError as exc:
+            if exc.status == 500 and "no finalized versions" in str(exc).lower():
+                return {}
+            raise
+        return resp if isinstance(resp, dict) else {}
 
     def batch_check(self, values_csv: str) -> list[dict[str, Any]]:
         """Batch check indicator values. Returns [] when nothing matches (or 404).
@@ -742,6 +810,55 @@ class AkaDtoOutput(ActionOutput):
     id: int | None = None
     title: str | None = None
     akas: list[str] | None = None
+
+
+class SensorOrgOutput(ActionOutput):
+    """A sensor's owning organization (spec IdNamePair; null on some live rows)."""
+
+    id: int | None = None
+    name: str | None = None
+
+
+class TaskingIndicatorOutput(ActionOutput):
+    """A tasked indicator (spec "Model that carries indicator and classification information.").
+
+    `fileHashes` arrives as an object keyed by hash algorithm; it is kept as
+    a JSON string (see _lenient_str).
+    """
+
+    id: int | None = None
+    type: str | None = None
+    value: str | None = None
+    classification: str | None = None
+    fileHashes: str | None = None
+    links: list[LinkOutput] | None = None
+
+    @field_validator("fileHashes", mode="before")
+    @classmethod
+    def _coerce_str(cls, value: Any) -> str | None:
+        return _lenient_str(value)
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _normalize_links(cls, value: Any) -> Any:
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
+
+
+class TaskingRuleOutput(ActionOutput):
+    """A tasked rule (spec "Model that carries rule tasking and classfication information.")."""
+
+    id: int | None = None
+    versionNumber: int | None = None
+    signature: str | None = None
+    classification: str | None = None
+    links: list[LinkOutput] | None = None
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _normalize_links(cls, value: Any) -> Any:
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
 
 
 # Per-action `value.name` CEF types (from the classic manifest; lookup_ipv6,
@@ -1823,6 +1940,340 @@ def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> l
 
         logger.info(f"Total evidence retrieved: {len(all_evidence)}")
         return [EvidenceItemOutput(**evidence) for evidence in all_evidence]
+    finally:
+        client.close()
+
+
+# =============================================================================
+# Sensor Actions
+# =============================================================================
+
+
+class GetSensorsParams(Params):
+    page: int | None = Param(
+        description=(
+            "The specific page number to retrieve (1-indexed). If provided, only that single page will be returned. "
+            "If not provided, all pages will be retrieved up to a 10 page limit."
+        ),
+        required=False,
+        column_name="page",
+    )
+    page_size: int = Param(
+        description="The number of sensors to return per page.",
+        required=False,
+        default=50,
+        column_name="page_size",
+    )
+    type: str = Param(
+        description="Filter results based on sensor type.",
+        required=False,
+        default="",
+        column_name="type",
+    )
+    org: int | None = Param(
+        description="Filter results based on the sensor's organization ID.",
+        required=False,
+        column_name="org",
+    )
+    logical_location: str = Param(
+        description="Filter results based on the sensor's logical location.",
+        required=False,
+        default="",
+        column_name="logical_location",
+    )
+    desc_sort: bool = Param(
+        description="The sort direction. True for a descending sort, false for a ascending sort.",
+        required=False,
+        default=False,
+        column_name="desc_sort",
+    )
+    sort_by: str = Param(
+        description="The value to sort results on.",
+        required=False,
+        default="id",
+        column_name="sort_by",
+    )
+
+
+class SensorOutput(ActionOutput):
+    """A sensor (OpenAPI 2.15.0 SensorResource).
+
+    Live rows serialize the links under `_links` (underscore, rel-keyed
+    object); the client renames them to `links` before validation.
+    `org` and `logicalLocation` are null on some live rows.
+    """
+
+    id: int | None = None
+    name: str | None = None
+    logicalLocation: str | None = None
+    org: SensorOrgOutput | None = None
+    type: str | None = None
+    currentVersionNumber: int | None = None
+    latestConfigVersionNumber: int | None = None
+    links: list[LinkOutput] | None = None
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _normalize_links(cls, value: Any) -> Any:
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
+
+
+class GetSensorsSummary(ActionOutput):
+    total_sensors: int | None = None
+    pages_processed: int | None = None
+    total_pages: int | None = None
+
+
+@app.action(
+    description="Browse and fetch sensors from the Analyst1 platform",
+    action_type="investigate",
+    render_as="table",
+    summary_type=GetSensorsSummary,
+)
+def get_sensors(params: GetSensorsParams, soar: SOARClient, asset: Asset) -> list[SensorOutput]:
+    """Get sensors with pagination support."""
+    logger.info("Fetching sensors")
+
+    page = params.page
+    if page is not None and page < 1:
+        raise ActionFailure("Page must be greater than 0")
+
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        api_params: dict[str, Any] = {
+            "descSort": params.desc_sort,
+            "sortBy": params.sort_by,
+            "pageSize": params.page_size,
+        }
+        if params.type:
+            api_params["type"] = params.type
+        if params.org is not None:
+            api_params["org"] = params.org
+        if params.logical_location:
+            api_params["logicalLocation"] = params.logical_location
+
+        # Pagination mode mirrors get_evidence: no page -> auto-page up to a cap.
+        if page is not None:
+            max_pages = 1
+            start_page = page
+        else:
+            max_pages = 10
+            start_page = 1
+
+        all_sensors: list[dict] = []
+        current_page = start_page
+        pages_processed = 0
+        response: dict[str, Any] | None = None
+
+        while pages_processed < max_pages:
+            api_params["page"] = current_page
+            response = client.get_sensors(api_params)
+
+            if not response or "results" not in response:
+                break
+
+            page_results = response.get("results", [])
+            pages_processed += 1
+
+            if not page_results:
+                break
+
+            all_sensors.extend(page_results)
+            logger.info(f"Retrieved {len(page_results)} sensors from page {current_page}")
+
+            if page is not None:
+                break
+
+            total_pages = response.get("totalPages", 1)
+            if current_page >= total_pages:
+                break
+
+            current_page += 1
+
+        soar.set_summary(
+            GetSensorsSummary(
+                total_sensors=len(all_sensors),
+                pages_processed=pages_processed,
+                total_pages=response.get("totalPages") if response else None,
+            )
+        )
+        logger.info(f"Total sensors retrieved: {len(all_sensors)}")
+        return [SensorOutput(**sensor) for sensor in all_sensors]
+    finally:
+        client.close()
+
+
+class GetSensorTaskingsParams(Params):
+    sensor_id: int = Param(
+        description="Analyst1 sensor ID",
+        primary=True,
+    )
+
+
+class SensorTaskingsOutput(ActionOutput):
+    """A sensor's current taskings (spec "Model for sensor taskings.")."""
+
+    id: int | None = None
+    version: int | None = None
+    indicators: list[TaskingIndicatorOutput] | None = None
+    rules: list[TaskingRuleOutput] | None = None
+    links: list[LinkOutput] | None = None
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _normalize_links(cls, value: Any) -> Any:
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
+
+
+class SensorTaskingsSummary(ActionOutput):
+    version: int | None = None
+    indicator_count: int | None = None
+    rule_count: int | None = None
+
+
+@app.action(
+    description="Fetch the indicators and rules currently tasked to an Analyst1 sensor",
+    action_type="investigate",
+    render_as="table",
+    summary_type=SensorTaskingsSummary,
+)
+def get_sensor_taskings(params: GetSensorTaskingsParams, soar: SOARClient, asset: Asset) -> list[SensorTaskingsOutput]:
+    """Get the taskings for a sensor."""
+    logger.info(f"Fetching taskings for sensor: {params.sensor_id}")
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        result = client.get_sensor_taskings(params.sensor_id)
+        if not result or not result.get("id"):
+            return []
+        soar.set_summary(
+            SensorTaskingsSummary(
+                version=result.get("version"),
+                indicator_count=len(result.get("indicators") or []),
+                rule_count=len(result.get("rules") or []),
+            )
+        )
+        return [SensorTaskingsOutput(**result)]
+    finally:
+        client.close()
+
+
+class GetSensorConfigParams(Params):
+    sensor_id: int = Param(
+        description="Analyst1 sensor ID",
+        primary=True,
+    )
+
+
+class SensorConfigOutput(ActionOutput):
+    sensor_id: int | None = None
+    vault_id: str | None = OutputField(cef_types=["vault id"])
+    file_name: str | None = None
+    config_text: str | None = None
+
+
+class SensorConfigSummary(ActionOutput):
+    vault_id: str | None = None
+    file_name: str | None = None
+
+
+@app.action(
+    description="Fetch an Analyst1 sensor's current configuration file and store it in the vault",
+    action_type="investigate",
+    render_as="table",
+    summary_type=SensorConfigSummary,
+)
+def get_sensor_config(params: GetSensorConfigParams, soar: SOARClient, asset: Asset) -> list[SensorConfigOutput]:
+    """Get a sensor's configuration file and store it in the vault."""
+    logger.info(f"Fetching config for sensor: {params.sensor_id}")
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        config_text = client.get_sensor_config_text(params.sensor_id)
+    finally:
+        client.close()
+
+    if not config_text:
+        # Not found (404) or blank config: succeed with no data, no vault write.
+        return []
+
+    file_name = f"sensor{params.sensor_id}Config.txt"
+    vault_id = soar.vault.create_attachment(soar.get_executing_container_id(), config_text, file_name)
+    soar.set_summary(SensorConfigSummary(vault_id=vault_id, file_name=file_name))
+    return [
+        SensorConfigOutput(
+            sensor_id=params.sensor_id,
+            vault_id=vault_id,
+            file_name=file_name,
+            config_text=config_text,
+        )
+    ]
+
+
+class GetSensorDiffParams(Params):
+    sensor_id: int = Param(
+        description="Analyst1 sensor ID",
+    )
+    version: int = Param(
+        description="The sensor config version to diff against the latest version",
+        primary=True,
+    )
+
+
+class SensorDiffOutput(ActionOutput):
+    """A tasking diff between a sensor config version and the latest (spec SensorDiff)."""
+
+    id: int | None = None
+    version: int | None = None
+    latestVersion: int | None = None
+    indicatorsAdded: list[TaskingIndicatorOutput] | None = None
+    indicatorsRemoved: list[TaskingIndicatorOutput] | None = None
+    rulesAdded: list[TaskingRuleOutput] | None = None
+    rulesRemoved: list[TaskingRuleOutput] | None = None
+    links: list[LinkOutput] | None = None
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _normalize_links(cls, value: Any) -> Any:
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
+
+
+class SensorDiffSummary(ActionOutput):
+    version: int | None = None
+    latest_version: int | None = None
+    indicators_added: int | None = None
+    indicators_removed: int | None = None
+    rules_added: int | None = None
+    rules_removed: int | None = None
+
+
+@app.action(
+    description="Fetch the tasking differences between an Analyst1 sensor config version and the latest version",
+    action_type="investigate",
+    render_as="table",
+    summary_type=SensorDiffSummary,
+)
+def get_sensor_diff(params: GetSensorDiffParams, soar: SOARClient, asset: Asset) -> list[SensorDiffOutput]:
+    """Get the tasking diff for a sensor config version."""
+    logger.info(f"Fetching tasking diff for sensor {params.sensor_id}, version {params.version}")
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        result = client.get_sensor_diff(params.sensor_id, params.version)
+        if not result or not result.get("id"):
+            logger.info("No tasking diff available (not found, or no finalized config versions for this sensor)")
+            return []
+        soar.set_summary(
+            SensorDiffSummary(
+                version=result.get("version"),
+                latest_version=result.get("latestVersion"),
+                indicators_added=len(result.get("indicatorsAdded") or []),
+                indicators_removed=len(result.get("indicatorsRemoved") or []),
+                rules_added=len(result.get("rulesAdded") or []),
+                rules_removed=len(result.get("rulesRemoved") or []),
+            )
+        )
+        return [SensorDiffOutput(**result)]
     finally:
         client.close()
 

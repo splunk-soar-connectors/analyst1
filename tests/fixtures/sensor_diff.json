@@ -1,0 +1,52 @@
+{
+  "id": 401,
+  "version": 2,
+  "latestVersion": 4,
+  "indicatorsAdded": [
+    {
+      "id": 1003,
+      "type": "domain",
+      "value": "added.example.com",
+      "classification": "U",
+      "fileHashes": null,
+      "links": {
+        "details": {
+          "href": "https://analyst1.example.com/api/1_1/indicator/1003"
+        }
+      }
+    }
+  ],
+  "indicatorsRemoved": [
+    {
+      "id": 1001,
+      "type": "ip",
+      "value": "198.51.100.7",
+      "classification": "U",
+      "fileHashes": null,
+      "links": {
+        "details": {
+          "href": "https://analyst1.example.com/api/1_1/indicator/1001"
+        }
+      }
+    }
+  ],
+  "rulesAdded": [
+    {
+      "id": 2002,
+      "versionNumber": 2,
+      "signature": "alert udp any any -> any any (msg:\"TEST RULE 2\"; sid:9000002;)",
+      "classification": "U",
+      "links": {
+        "details": {
+          "href": "https://analyst1.example.com/api/1_1/rules/2002"
+        }
+      }
+    }
+  ],
+  "rulesRemoved": [],
+  "links": {
+    "self": {
+      "href": "https://analyst1.example.com/api/1_1/sensors/401/taskings/diff/2"
+    }
+  }
+}
