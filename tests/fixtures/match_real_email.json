@@ -1,0 +1,105 @@
+{
+  "targets": [],
+  "expand": "hitStats,hitStatsDetails,sources,enrichmentResults,verifications",
+  "type": "email",
+  "value": {
+    "name": "attacker@example.com",
+    "classification": "U"
+  },
+  "description": null,
+  "activityDates": [
+    {
+      "date": "2026-06-27",
+      "classification": "U"
+    }
+  ],
+  "activityRange": {
+    "startDate": "2026-06-27",
+    "endDate": "2026-06-27",
+    "classification": "U"
+  },
+  "reportedDates": [
+    {
+      "date": "2026-07-07",
+      "classification": "U"
+    }
+  ],
+  "reportedRange": {
+    "startDate": "2026-07-07",
+    "endDate": "2026-07-07",
+    "classification": "U"
+  },
+  "attackPatterns": [],
+  "tags": [],
+  "actors": [
+    {
+      "id": 9001,
+      "name": "Mock Actor Group",
+      "classification": "U"
+    }
+  ],
+  "malwares": [],
+  "status": "aw",
+  "hashes": null,
+  "fileNames": null,
+  "fileSize": null,
+  "path": null,
+  "ports": null,
+  "ipRegistration": null,
+  "domainRegistration": null,
+  "ipResolution": null,
+  "originatingIps": [],
+  "subjects": [],
+  "requestMethods": null,
+  "tlp": "amberStrict",
+  "tlpJustification": null,
+  "tlpCaveats": null,
+  "tlpResolution": "resolved",
+  "tlpHighestAssociated": "amberStrict",
+  "tlpLowestAssociated": "amberStrict",
+  "active": true,
+  "benign": {
+    "value": false,
+    "classification": "U"
+  },
+  "confidenceLevel": null,
+  "exploitStage": null,
+  "lastHit": null,
+  "firstHit": null,
+  "hitCount": 0,
+  "firstExternalHit": null,
+  "lastExternalHit": null,
+  "externalhitCount": 0,
+  "hitStatDetails": [],
+  "reportCount": 1,
+  "verified": false,
+  "tasked": true,
+  "indicatorDerivation": null,
+  "enrichmentFields": [],
+  "enrichmentResults": [],
+  "sources": [],
+  "integrationSources": [],
+  "indicatorRiskScore": {
+    "name": "Unknown",
+    "classification": "U"
+  },
+  "verifiedDateRange": {
+    "startDate": null,
+    "endDate": null,
+    "classification": "U"
+  },
+  "verifications": null,
+  "links": {
+    "self": {
+      "href": "https://analyst1.example.com/api/1_1/indicator/90000036"
+    },
+    "evidence": {
+      "href": "https://analyst1.example.com/api/1_1/indicator/90000036/evidence"
+    },
+    "stix": {
+      "href": "https://analyst1.example.com/api/1_1/indicator/90000036/stix"
+    }
+  },
+  "stixObjects": null,
+  "id": 90000036
+}

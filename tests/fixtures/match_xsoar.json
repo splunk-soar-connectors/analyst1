@@ -1,0 +1,147 @@
+{
+  "type": "domain",
+  "value": {
+    "name": "test.com",
+    "classification": "U"
+  },
+  "description": {
+    "name": "A test indicator",
+    "classification": "U"
+  },
+  "activityDates": [
+    {
+      "date": "2020-01-20",
+      "classification": "U"
+    },
+    {
+      "date": "2020-03-04",
+      "classification": "U"
+    }
+  ],
+  "reportedDates": [
+    {
+      "date": "2020-01-31",
+      "classification": "U"
+    }
+  ],
+  "targets": [
+    {
+      "name": "Mock Target",
+      "id": 1,
+      "classification": "U"
+    }
+  ],
+  "attackPatterns": [
+    {
+      "name": "Mock Attack Pattern",
+      "id": 1,
+      "classification": "U"
+    }
+  ],
+  "actors": [
+    {
+      "name": "Mock Actor",
+      "id": 2,
+      "classification": "U"
+    },
+    {
+      "name": "Unattributed",
+      "id": 1,
+      "classification": "U"
+    }
+  ],
+  "malwares": [
+    {
+      "name": "Mock Malware",
+      "id": 7,
+      "classification": "U"
+    }
+  ],
+  "status": "aw",
+  "hashes": null,
+  "fileNames": null,
+  "fileSize": null,
+  "path": null,
+  "ports": [
+    {
+      "value": 443,
+      "classification": "U"
+    }
+  ],
+  "ipRegistration": null,
+  "domainRegistration": {
+    "name": "Mock Registrar Record",
+    "classification": "U"
+  },
+  "ipResolution": {
+    "name": "192.0.2.1",
+    "classification": "U"
+  },
+  "originatingIps": null,
+  "subjects": null,
+  "requestMethods": null,
+  "tlp": "mocktlp",
+  "tlpJustification": null,
+  "tlpCaveats": null,
+  "tlpResolution": "resolved",
+  "tlpHighestAssociated": "mocktlp",
+  "tlpLowestAssociated": "mocktlp",
+  "active": true,
+  "benign": {
+    "value": false,
+    "classification": "U"
+  },
+  "indicatorRiskScore": {
+    "name": "High",
+    "classification": "U"
+  },
+  "confidenceLevel": {
+    "value": "high",
+    "classification": "U"
+  },
+  "exploitStage": {
+    "name": "Delivery",
+    "classification": "U"
+  },
+  "lastHit": "2026-01-01",
+  "firstHit": "2020-01-01",
+  "hitCount": 3,
+  "reportCount": 2,
+  "verified": false,
+  "tasked": false,
+  "enrichmentFields": [
+    {
+      "type": "registrar",
+      "value": "Mock Registrar Inc",
+      "name": "Registrar",
+      "numeric": null,
+      "classification": "U"
+    }
+  ],
+  "enrichmentResults": [
+    {
+      "date": "2026-01-02",
+      "format": "json",
+      "type": "VIRUS_TOTAL",
+      "result": "{\"positives\": 12, \"total\": 70}"
+    },
+    {
+      "date": "2026-01-03",
+      "format": "colonDelimited",
+      "type": "WHOIS_DOMAIN_REGISTRATION",
+      "result": "Registrar: Mock Registrar Inc\nCreated: 2019-01-01"
+    }
+  ],
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://mock.com/api/1_0/indicator/12345",
+      "hreflang": null,
+      "media": null,
+      "title": null,
+      "type": null,
+      "deprecation": null
+    }
+  ],
+  "id": 12345
+}

@@ -1,0 +1,60 @@
+{
+  "totalPages": 3,
+  "totalResults": 6,
+  "pages": [
+    [
+      {
+        "id": 101,
+        "title": "Mock Evidence A",
+        "type": "pdf",
+        "tlp": "white",
+        "analyzedDate": "2026-01-01",
+        "exploitStage": null
+      },
+      {
+        "id": 102,
+        "title": "Mock Evidence B",
+        "type": "txt",
+        "tlp": "green",
+        "analyzedDate": "2026-01-02",
+        "exploitStage": null
+      }
+    ],
+    [
+      {
+        "id": 103,
+        "title": "Mock Evidence C",
+        "type": "pdf",
+        "tlp": "amber",
+        "analyzedDate": "2026-01-03",
+        "exploitStage": null
+      },
+      {
+        "id": 104,
+        "title": "Mock Evidence D",
+        "type": "doc",
+        "tlp": "white",
+        "analyzedDate": "2026-01-04",
+        "exploitStage": null
+      }
+    ],
+    [
+      {
+        "id": 105,
+        "title": "Mock Evidence E",
+        "type": "stix",
+        "tlp": "red",
+        "analyzedDate": "2026-01-05",
+        "exploitStage": null
+      },
+      {
+        "id": 106,
+        "title": "Mock Evidence F",
+        "type": "web",
+        "tlp": "green",
+        "analyzedDate": "2026-01-06",
+        "exploitStage": null
+      }
+    ]
+  ]
+}

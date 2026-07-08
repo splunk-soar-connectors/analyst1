@@ -1,0 +1,228 @@
+{
+  "targets": [],
+  "expand": "hitStats,hitStatsDetails,sources,enrichmentResults,verifications",
+  "type": "file",
+  "value": {
+    "name": "AAAABBBBCCCCDDDDEEEEFFFF0000111122223333444455556666777788889999",
+    "classification": "U"
+  },
+  "description": null,
+  "activityDates": [],
+  "activityRange": {
+    "startDate": null,
+    "endDate": null,
+    "classification": "U"
+  },
+  "reportedDates": [],
+  "reportedRange": {
+    "startDate": "2026-07-08",
+    "endDate": "2026-07-08",
+    "classification": "U"
+  },
+  "attackPatterns": [],
+  "tags": [
+    {
+      "id": 257,
+      "name": "Mock GIR: 1.1.6"
+    },
+    {
+      "id": 148,
+      "name": "Mock GIR: 1.1.5"
+    },
+    {
+      "id": 265,
+      "name": "Mock GIR: 1.4.1"
+    }
+  ],
+  "actors": [],
+  "malwares": [
+    {
+      "id": 4501,
+      "name": "MockStealer",
+      "classification": "U"
+    }
+  ],
+  "status": "aw",
+  "hashes": [
+    {
+      "type": "SHA256",
+      "value": "AAAABBBBCCCCDDDDEEEEFFFF0000111122223333444455556666777788889999",
+      "classification": "U"
+    },
+    {
+      "type": "MD5",
+      "value": "00112233445566778899AABBCCDDEEFF",
+      "classification": "U"
+    },
+    {
+      "type": "SHA1",
+      "value": "0011223344556677889900112233445566778899",
+      "classification": "U"
+    },
+    {
+      "type": "SSDEEP",
+      "value": "49152:MockSsdeepBlockOneMockSsdeepBlockOneMockSsdeepBlockOne:MockShort",
+      "classification": "U"
+    }
+  ],
+  "fileNames": [],
+  "fileSize": {
+    "value": 157732,
+    "classification": "U"
+  },
+  "path": null,
+  "ports": null,
+  "ipRegistration": null,
+  "domainRegistration": null,
+  "ipResolution": null,
+  "originatingIps": null,
+  "subjects": null,
+  "requestMethods": null,
+  "tlp": "amberStrict",
+  "tlpJustification": null,
+  "tlpCaveats": null,
+  "tlpResolution": "resolved",
+  "tlpHighestAssociated": "amberStrict",
+  "tlpLowestAssociated": "amberStrict",
+  "active": true,
+  "benign": {
+    "value": false,
+    "classification": "U"
+  },
+  "confidenceLevel": null,
+  "exploitStage": {
+    "id": 2,
+    "name": "Stage 3 - Delivery",
+    "classification": "U"
+  },
+  "lastHit": null,
+  "firstHit": null,
+  "hitCount": 0,
+  "firstExternalHit": null,
+  "lastExternalHit": null,
+  "externalhitCount": 0,
+  "hitStatDetails": [
+    {
+      "label": "SENSOR01",
+      "external": false,
+      "firstHit": "2024-09-11",
+      "lastHit": "2024-09-11",
+      "totalHits": 2,
+      "dimensions": [
+        {
+          "label": "dim-a",
+          "dimension": 1,
+          "firstHit": "2024-09-11",
+          "lastHit": "2024-09-11",
+          "totalHits": 2,
+          "dimensionValues": [
+            {
+              "id": 6001,
+              "label": "value-a",
+              "firstHit": "2024-09-11",
+              "lastHit": "2024-09-11",
+              "totalHits": 2
+            }
+          ]
+        },
+        {
+          "label": "dim-b",
+          "dimension": 2,
+          "firstHit": "2024-09-11",
+          "lastHit": "2024-09-11",
+          "totalHits": 2,
+          "dimensionValues": [
+            {
+              "id": 6002,
+              "label": "value-b",
+              "firstHit": "2024-09-11",
+              "lastHit": "2024-09-11",
+              "totalHits": 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "reportCount": 0,
+  "verified": false,
+  "tasked": false,
+  "indicatorDerivation": "Extracted",
+  "enrichmentFields": [],
+  "enrichmentResults": [
+    {
+      "result": "{\"source_version\": \"1.9\", \"filename\": \"mocklib.dll\", \"crc32\": \"00000000\", \"md5\": \"00112233445566778899AABBCCDDEEFF\", \"os_version\": \"6.2\", \"binary\": \"1\", \"trusted_signature\": \"1\", \"os_name\": \"Mock Windows Server (build 0000), 64-bit\", \"ssdeep\": \"12288:MockSsdeepBlockOne:MockShort\", \"dirname\": \"c:\\\\Mock\\\\Path\\\\mock_component\", \"language\": \"English\", \"media_source\": \"http://www.example.com/\", \"scan_time\": \"2020-06-18 23:05:59\", \"filesize\": \"773968\", \"sha256\": \"AAAABBBBCCCCDDDDEEEEFFFF0000111122223333444455556666777788889999\", \"description\": \"Mock C Runtime Library\", \"application_type\": \"dll\", \"mfg_name\": \"Mock Corporation\", \"sha1\": \"0011223344556677889900112233445566778899\"}",
+      "date": "2024-02-06",
+      "format": "json",
+      "type": "SHADOWSERVER"
+    },
+    {
+      "result": "Domain Name: EXAMPLE.COM\nRegistry Domain ID: 00000000_DOMAIN_COM-VRSN\nRegistrar WHOIS Server: whois.example-registrar.com\nRegistrar URL: http://www.example-registrar.com\nCreation Date: 2001-01-01T00:00:00Z\n",
+      "date": "2022-10-21",
+      "format": "colonDelimited",
+      "type": "WHOIS_DOMAIN_REGISTRATION"
+    },
+    {
+      "result": "No enrichment results returned",
+      "date": "2022-10-21",
+      "format": "plain",
+      "type": "WHOIS_IP_REGISTRATION"
+    },
+    {
+      "result": "inetnum:        192.0.2.0 - 192.0.2.255\nnetname:        MOCK-NET\ndescr:          Mock Network Path\ncountry:        ZZ\nadmin-c:        MOCK1-AP\ntech-c:         MOCK1-AP\nabuse-c:        MOCK2-AP\nstatus:         ASSIGNED NON-PORTABLE\nmnt-by:         MAINT-MOCK\nlast-modified:  2021-01-15T01:28:09Z\nsource:         APNIC\ne-mail:         netadmin@example.com\nabuse-mailbox:  netadmin@example.com\nphone:          +000000000\n",
+      "date": "2022-10-21",
+      "format": "colonDelimited",
+      "type": "WHOIS_IP_REGISTRATION"
+    }
+  ],
+  "sources": [
+    {
+      "type": "indicator_api",
+      "enabled": true,
+      "title": "Mock Indicator Feed",
+      "url": "",
+      "category": "PAID",
+      "id": 173
+    }
+  ],
+  "integrationSources": [
+    "Mock Integration Feed"
+  ],
+  "indicatorRiskScore": {
+    "name": "Unknown",
+    "classification": "U"
+  },
+  "verifiedDateRange": {
+    "startDate": null,
+    "endDate": null,
+    "classification": "U"
+  },
+  "verifications": [
+    {
+      "verifier": "mock.analyst",
+      "verifierOrg": "MockOrg",
+      "verificationDate": "2026-07-01",
+      "evidenceId": 555,
+      "evidenceTitle": "Mock Evidence Report"
+    }
+  ],
+  "links": {
+    "self": {
+      "href": "https://analyst1.example.com/api/1_1/indicator/90000948"
+    },
+    "evidence": {
+      "href": "https://analyst1.example.com/api/1_1/indicator/90000948/evidence"
+    },
+    "stix": {
+      "href": "https://analyst1.example.com/api/1_1/indicator/90000948/stix"
+    }
+  },
+  "stixObjects": [
+    {
+      "id": "indicator--00000000-0000-4000-8000-000000000001",
+      "reportingSourceId": 173,
+      "type": "indicator"
+    }
+  ],
+  "id": 90000948
+}
