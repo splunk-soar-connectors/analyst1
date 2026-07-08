@@ -477,7 +477,7 @@ app = App(
 # does not accept them and the pyproject adapter does not map project authors),
 # but the SDK's ManifestProcessor copies every app_meta_info entry onto the
 # generated manifest, so inject the SDK's canonical contributor model here.
-app.app_meta_info["contributors"] = [AppContributor(name="Mike Forgione (Analytica 42)")]
+app.app_meta_info["contributors"] = [AppContributor(name="Mike Forgione (Analyst1)")]
 
 
 # =============================================================================
