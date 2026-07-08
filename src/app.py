@@ -22,11 +22,13 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
+from pydantic import field_validator
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import ActionOutput, OutputField, PermissiveActionOutput
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.asset_state import AssetState
+from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.params import Param, Params
 
@@ -309,22 +311,20 @@ class Analyst1Client:
         if not response or not response.get("id"):
             return None
 
-        # Add base_url for view rendering
+        # Classic-app runtime decorations (analyst1_connector.py, release/1.2.1):
+        # base_url for view rendering, actor links, and human-friendly
+        # enrichment result names. Unlike classic, enrichmentResults[].result
+        # is intentionally NOT json.loads()-ed into an object: the SDK output
+        # contract types it as a string, so the raw JSON string is preserved
+        # (documented delta, see release notes).
         response["base_url"] = self.base_url
 
-        # Add actor links
-        for actor in response.get("actors", []):
-            if actor.get("id", 0) > 1:
+        for actor in response.get("actors") or []:
+            if (actor.get("id") or 0) > 1:
                 actor["link"] = f"{self.base_url}/actors/{actor['id']}"
 
-        # Add human-friendly enrichment result names
-        for enrichment_result in response.get("enrichmentResults", []):
+        for enrichment_result in response.get("enrichmentResults") or []:
             enrichment_result["name"] = ENRICHMENT_RESULTS_NAME_MAP.get(enrichment_result["type"], enrichment_result["type"])
-            if enrichment_result.get("format") == "json":
-                try:
-                    enrichment_result["result"] = json.loads(enrichment_result["result"])
-                except Exception:
-                    pass
 
         return response
 
@@ -350,35 +350,267 @@ app = App(
 
 # =============================================================================
 # Shared Output Models
+#
+# The nested sub-models below reproduce the classic app's (v1.2.1)
+# action_result.data.* datapath contract for the nine lookup actions. The
+# authoritative source is the classic analyst1.json lookup_domain output list
+# (all nine lookups declare the identical data datapaths).
 # =============================================================================
 
 
-class IndicatorOutput(ActionOutput):
-    """Output model for indicator lookup actions."""
+def _lenient_str(value: Any) -> str | None:
+    """Coerce a value of uncertain runtime shape to the classic string datapath type.
 
-    # Indicator found flag
-    found: bool = True
-    message: str = ""
+    The classic manifest declares some datapaths as strings that the API may
+    return as numbers or structured objects. Classic passed them through
+    untyped; the SDK's typed outputs would fail validation instead, so coerce
+    scalars via str() and structures via JSON to keep the declared string type
+    without crashing the action.
+    """
+    if value is None or isinstance(value, str):
+        return value
+    if isinstance(value, int | float | bool):
+        return str(value)
+    return json.dumps(value)
 
-    # Primary indicator fields
+
+class ClassifiedDate(ActionOutput):
+    """A date with a classification (activityDates, reportedDates)."""
+
+    classification: str | None = None
+    date: str | None = None
+
+
+class ClassifiedName(ActionOutput):
+    """A name with a classification (description, fileNames, ipRegistration, ...)."""
+
+    classification: str | None = None
+    name: str | None = None
+
+
+class ClassifiedIdName(ActionOutput):
+    """An id/name pair with a classification (attackPatterns, targets, malwares)."""
+
+    classification: str | None = None
     id: int | None = None
+    name: str | None = None
+
+
+class ActorOutput(ClassifiedIdName):
+    """A threat actor; `link` is a classic runtime decoration built from base_url."""
+
+    link: str | None = None
+
+
+class BenignOutput(ActionOutput):
+    classification: str | None = None
+    value: bool | None = None
+
+
+class ConfidenceLevelOutput(ActionOutput):
+    classification: str | None = None
+    value: str | None = None
+
+
+class EnrichmentFieldOutput(ActionOutput):
+    """Enrichment field; `nunmeric` reproduces the classic manifest's field name verbatim."""
+
     type: str | None = None
+    value: str | None = None
+    name: str | None = None
+    nunmeric: str | None = None
+    classification: str | None = None
+
+    @field_validator("value", "nunmeric", mode="before")
+    @classmethod
+    def _coerce_str(cls, value: Any) -> str | None:
+        return _lenient_str(value)
+
+
+class EnrichmentResultOutput(ActionOutput):
+    """Enrichment result; `name` is a classic runtime decoration (friendly type name).
+
+    `result` stays a JSON string (classic parsed json-format results into an
+    object at runtime; the SDK output contract cannot type an arbitrary object).
+    """
+
+    date: str | None = None
+    format: str | None = None
+    type: str | None = None
+    result: str | None = None
+    name: str | None = None
+
+
+class FileSizeOutput(ActionOutput):
+    value: int | None = None
+    classification: str | None = None
+
+
+class HashOutput(ActionOutput):
+    type: str | None = None
+    value: str | None = None
+    classification: str | None = None
+
+
+class LinkOutput(ActionOutput):
+    href: str | None = OutputField(cef_types=["url"])
+    rel: str | None = None
+
+
+class PortOutput(ActionOutput):
+    value: int | None = None
+    classification: str | None = None
+
+
+class IndicatorValueOutput(ActionOutput):
+    """The indicator value itself; per-action subclasses add the CEF type on `name`."""
+
+    classification: str | None = None
+    name: str | None = None
+
+
+class IndicatorOutput(ActionOutput):
+    """Output model for the nine indicator lookup actions (classic 76-datapath contract).
+
+    Shape corrections vs the classic manifest (which declared these as flat
+    strings, contradicting the API payloads the classic view rendered):
+    `exploitStage`, `path` are objects and `originatingIps` is a list of
+    objects; `hitCount` is numeric. `base_url`, `actors.*.link` and
+    `enrichmentResults.*.name` are classic runtime decorations that classic
+    emitted without declaring; the SDK declares everything it emits.
+    `campaigns` and `indicatorRiskScore` are real API fields the classic view
+    rendered/received but never declared.
+    """
+
     active: bool | None = None
-    verified: bool | None = None
-    tasked: bool | None = None
-    reportCount: int | None = None
-    hitCount: int | None = None
+    activityDates: list[ClassifiedDate] | None = None
+    actors: list[ActorOutput] | None = None
+    attackPatterns: list[ClassifiedIdName] | None = None
+    benign: BenignOutput | None = None
+    confidenceLevel: ConfidenceLevelOutput | None = None
+    description: ClassifiedName | None = None
+    domainRegistration: str | None = None
+    enrichmentFields: list[EnrichmentFieldOutput] | None = None
+    enrichmentResults: list[EnrichmentResultOutput] | None = None
+    exploitStage: ClassifiedName | None = None
+    fileNames: list[ClassifiedName] | None = None
+    fileSize: list[FileSizeOutput] | None = None
     firstHit: str | None = None
+    hashes: list[HashOutput] | None = None
+    hitCount: int | None = None
+    id: int | None = None
+    ipRegistration: ClassifiedName | None = None
+    ipResolution: ClassifiedName | None = None
     lastHit: str | None = None
+    links: list[LinkOutput] | None = None
+    malwares: list[ClassifiedIdName] | None = None
+    originatingIps: list[ClassifiedName] | None = None
+    path: ClassifiedName | None = None
+    ports: list[PortOutput] | None = None
+    reportCount: int | None = None
+    reportedDates: list[ClassifiedDate] | None = None
+    requestMethods: list[ClassifiedName] | None = None
     status: str | None = None
+    subjects: list[ClassifiedName] | None = None
+    targets: list[ClassifiedIdName] | None = None
+    tasked: bool | None = None
     tlp: str | None = None
+    tlpCaveats: str | None = None
+    tlpHighestAssociated: str | None = None
+    tlpJustification: str | None = None
+    tlpLowestAssociated: str | None = None
+    tlpResolution: str | None = None
+    type: str | None = None
+    value: IndicatorValueOutput | None = None
+    verified: bool | None = None
     base_url: str | None = None
+    campaigns: list[ClassifiedIdName] | None = None
+    indicatorRiskScore: ClassifiedName | None = None
 
-    # Value as string (the actual indicator value)
-    indicator_value: str | None = None
+    @field_validator("domainRegistration", mode="before")
+    @classmethod
+    def _coerce_str(cls, value: Any) -> str | None:
+        return _lenient_str(value)
 
-    # Complex data stored as JSON strings for downstream processing
-    raw_data: str | None = None  # Full API response as JSON
+    @field_validator("fileSize", mode="before")
+    @classmethod
+    def _wrap_file_size(cls, value: Any) -> Any:
+        # Classic manifest declares fileSize as a list (fileSize.*.value);
+        # tolerate a single object by wrapping it.
+        if isinstance(value, dict):
+            return [value]
+        return value
+
+
+# Per-action `value.name` CEF types (from the classic manifest; lookup_ipv6,
+# lookup_mutex and lookup_http_request declare none and use IndicatorOutput
+# directly).
+
+
+class DomainIndicatorValue(IndicatorValueOutput):
+    name: str | None = OutputField(cef_types=["domain"])
+
+
+class DomainIndicatorOutput(IndicatorOutput):
+    value: DomainIndicatorValue | None = None
+
+
+class EmailIndicatorValue(IndicatorValueOutput):
+    name: str | None = OutputField(cef_types=["email"])
+
+
+class EmailIndicatorOutput(IndicatorOutput):
+    value: EmailIndicatorValue | None = None
+
+
+class HashIndicatorValue(IndicatorValueOutput):
+    name: str | None = OutputField(cef_types=["hash", "sha256", "sha1", "md5"])
+
+
+class HashIndicatorOutput(IndicatorOutput):
+    value: HashIndicatorValue | None = None
+
+
+class IpIndicatorValue(IndicatorValueOutput):
+    name: str | None = OutputField(cef_types=["ip"])
+
+
+class IpIndicatorOutput(IndicatorOutput):
+    value: IpIndicatorValue | None = None
+
+
+class StringIndicatorValue(IndicatorValueOutput):
+    # Classic declares contains ["ip"] on lookup_string's value.name;
+    # reproduced verbatim for contract parity.
+    name: str | None = OutputField(cef_types=["ip"])
+
+
+class StringIndicatorOutput(IndicatorOutput):
+    value: StringIndicatorValue | None = None
+
+
+class UrlIndicatorValue(IndicatorValueOutput):
+    name: str | None = OutputField(cef_types=["url"])
+
+
+class UrlIndicatorOutput(IndicatorOutput):
+    value: UrlIndicatorValue | None = None
+
+
+class LookupSummary(ActionOutput):
+    """Runtime summary for lookups: classic sets only `id` (and nothing when not found)."""
+
+    id: int | None = None
+
+
+class LookupSummaryDatapaths(LookupSummary):
+    """Manifest summary datapaths for lookups.
+
+    Classic additionally declares action_result.summary.total_objects, which
+    the platform populates; it is declared here but never set by the app.
+    """
+
+    total_objects: int | None = None
 
 
 # =============================================================================
@@ -429,7 +661,7 @@ class LookupHashParams(Params):
         description="Hash to lookup",
         primary=True,
         default="",
-        cef_types=["hash", "sha256", "sha1", "md5"],
+        cef_types=["hash", "sha256", "sha1", "md5", "string"],
     )
 
 
@@ -454,7 +686,6 @@ class LookupIpv6Params(Params):
         description="IPv6 to lookup",
         primary=True,
         default="",
-        cef_types=["ipv6"],
     )
 
 
@@ -508,61 +739,68 @@ def _safe_str(value: Any) -> str | None:
         return None
 
 
-def _safe_bool(value: Any) -> bool | None:
-    """Safely convert value to bool, returning None if not possible."""
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.lower() in ("true", "1", "yes")
-    try:
-        return bool(value)
-    except (ValueError, TypeError):
-        return None
+def _do_indicator_lookup(
+    soar: SOARClient,
+    asset: Asset,
+    value: str,
+    indicator_type: str,
+    output_cls: type[IndicatorOutput],
+) -> list[IndicatorOutput]:
+    """Common logic for indicator lookups.
 
-
-def _do_indicator_lookup(asset: Asset, value: str, indicator_type: str) -> IndicatorOutput:
-    """Common logic for indicator lookups."""
+    Classic parity (_handle_indicator_match): on a match, one data record plus
+    summary.id; when the indicator is not found (API 404), no data records and
+    an empty summary, with the action still succeeding.
+    """
     client = Analyst1Client(asset, asset.auth_state)
     try:
         result = client.indicator_match(value, indicator_type)
-        if result:
-            # Extract value string from nested object
-            value_obj = result.get("value", {})
-            if isinstance(value_obj, dict):
-                indicator_value = value_obj.get("name") or value_obj.get("value", "")
-            else:
-                indicator_value = str(value_obj) if value_obj else ""
-
-            return IndicatorOutput(
-                found=True,
-                id=_safe_int(result.get("id")),
-                type=_safe_str(result.get("type")),
-                active=_safe_bool(result.get("active")),
-                verified=_safe_bool(result.get("verified")),
-                tasked=_safe_bool(result.get("tasked")),
-                reportCount=_safe_int(result.get("reportCount")),
-                hitCount=_safe_int(result.get("hitCount")),
-                firstHit=_safe_str(result.get("firstHit")),
-                lastHit=_safe_str(result.get("lastHit")),
-                status=_safe_str(result.get("status")),
-                tlp=_safe_str(result.get("tlp")),
-                base_url=_safe_str(result.get("base_url")),
-                indicator_value=_safe_str(indicator_value),
-                raw_data=json.dumps(result),
-            )
-        return IndicatorOutput(found=False, message="Indicator not found in Analyst1")
+        if result is None:
+            return []
+        soar.set_summary(LookupSummary(id=result["id"]))
+        return [output_cls(**result)]
     finally:
         client.close()
+
+
+# Fields the display template iterates or dereferences; the view handler
+# guarantees these keys exist so Jinja rendering never hits an undefined.
+_TEMPLATE_LIST_FIELDS = (
+    "activityDates",
+    "actors",
+    "attackPatterns",
+    "campaigns",
+    "enrichmentFields",
+    "enrichmentResults",
+    "fileNames",
+    "fileSize",
+    "hashes",
+    "malwares",
+    "originatingIps",
+    "ports",
+    "reportedDates",
+    "requestMethods",
+    "subjects",
+    "targets",
+)
+_TEMPLATE_OBJECT_FIELDS = (
+    "benign",
+    "confidenceLevel",
+    "description",
+    "exploitStage",
+    "ipResolution",
+    "path",
+    "value",
+)
 
 
 @app.view_handler(template="display_indicators.html")
 def display_indicators_view(outputs: list[IndicatorOutput]) -> dict:
     """Custom view handler for displaying indicator results.
 
-    This function prepares data for the display_indicators.html template.
-    The SDK automatically parses action results into IndicatorOutput objects.
+    Renders directly from the typed IndicatorOutput models (the classic view
+    filtered out records without an id and showed "No matches found" when
+    nothing remained).
 
     Args:
         outputs: List of IndicatorOutput objects from action results
@@ -573,23 +811,21 @@ def display_indicators_view(outputs: list[IndicatorOutput]) -> dict:
     results = []
 
     for output in outputs:
-        # Parse the raw_data JSON to get the full API response for the template
-        data_list = []
-        if output.raw_data:
-            try:
-                indicator_data = json.loads(output.raw_data)
-                data_list.append(indicator_data)
-            except (json.JSONDecodeError, TypeError):
-                pass
+        if not output.id:
+            continue
+        record = output.model_dump(exclude_none=True)
+        for field in _TEMPLATE_LIST_FIELDS:
+            record.setdefault(field, [])
+        for field in _TEMPLATE_OBJECT_FIELDS:
+            record.setdefault(field, {})
+        # The template compares element.id > 0 for actors and malwares
+        for element in (*record["actors"], *record["malwares"]):
+            element.setdefault("id", 0)
+        results.append({"data": [record]})
 
-        results.append(
-            {
-                "param": {"indicator": output.indicator_value},
-                "data": data_list,
-                "found": output.found,
-                "message": output.message,
-            }
-        )
+    if not results:
+        # Not-found runs emit no data records; render the "No matches found" row
+        results.append({"data": []})
 
     return {
         "results": results,
@@ -603,52 +839,57 @@ def display_indicators_view(outputs: list[IndicatorOutput]) -> dict:
     description="Check for the presence of a domain in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_domain(params: LookupDomainParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_domain(params: LookupDomainParams, soar: SOARClient, asset: Asset) -> list[DomainIndicatorOutput]:
     """Look up a domain in Analyst1."""
     logger.info(f"Looking up domain: {params.domain}")
-    return _do_indicator_lookup(asset, params.domain, "domain")
+    return _do_indicator_lookup(soar, asset, params.domain, "domain", DomainIndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of an email in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_email(params: LookupEmailParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_email(params: LookupEmailParams, soar: SOARClient, asset: Asset) -> list[EmailIndicatorOutput]:
     """Look up an email in Analyst1."""
     logger.info(f"Looking up email: {params.email}")
-    return _do_indicator_lookup(asset, params.email, "email")
+    return _do_indicator_lookup(soar, asset, params.email, "email", EmailIndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of a hash in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_hash(params: LookupHashParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_hash(params: LookupHashParams, soar: SOARClient, asset: Asset) -> list[HashIndicatorOutput]:
     """Look up a file hash in Analyst1."""
     logger.info(f"Looking up hash: {params.hash}")
-    return _do_indicator_lookup(asset, params.hash, "file")
+    return _do_indicator_lookup(soar, asset, params.hash, "file", HashIndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of a string in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_string(params: LookupStringParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_string(params: LookupStringParams, soar: SOARClient, asset: Asset) -> list[StringIndicatorOutput]:
     """Look up a string in Analyst1."""
     logger.info(f"Looking up string: {params.string}")
-    return _do_indicator_lookup(asset, params.string, "string")
+    return _do_indicator_lookup(soar, asset, params.string, "string", StringIndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of an IP in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_ip(params: LookupIpParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_ip(params: LookupIpParams, soar: SOARClient, asset: Asset) -> list[IpIndicatorOutput]:
     """Look up an IP address in Analyst1."""
     logger.info(f"Looking up IP: {params.ip}")
     # Determine if IPv4 or IPv6
@@ -657,51 +898,55 @@ def lookup_ip(params: LookupIpParams, soar: SOARClient, asset: Asset) -> Indicat
         indicator_type = "ip" if ip_obj.version == 4 else "ipv6"
     except ValueError:
         indicator_type = "ip"
-    return _do_indicator_lookup(asset, params.ip, indicator_type)
+    return _do_indicator_lookup(soar, asset, params.ip, indicator_type, IpIndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of an IPv6 in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_ipv6(params: LookupIpv6Params, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_ipv6(params: LookupIpv6Params, soar: SOARClient, asset: Asset) -> list[IndicatorOutput]:
     """Look up an IPv6 address in Analyst1."""
     logger.info(f"Looking up IPv6: {params.ipv6}")
-    return _do_indicator_lookup(asset, params.ipv6, "ipv6")
+    return _do_indicator_lookup(soar, asset, params.ipv6, "ipv6", IndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of a URL in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_url(params: LookupUrlParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_url(params: LookupUrlParams, soar: SOARClient, asset: Asset) -> list[UrlIndicatorOutput]:
     """Look up a URL in Analyst1."""
     logger.info(f"Looking up URL: {params.url}")
-    return _do_indicator_lookup(asset, params.url, "url")
+    return _do_indicator_lookup(soar, asset, params.url, "url", UrlIndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of a mutex in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_mutex(params: LookupMutexParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_mutex(params: LookupMutexParams, soar: SOARClient, asset: Asset) -> list[IndicatorOutput]:
     """Look up a mutex in Analyst1."""
     logger.info(f"Looking up mutex: {params.mutex}")
-    return _do_indicator_lookup(asset, params.mutex, "mutex")
+    return _do_indicator_lookup(soar, asset, params.mutex, "mutex", IndicatorOutput)
 
 
 @app.action(
     description="Check for the presence of an HTTP request in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
 )
-def lookup_http_request(params: LookupHttpRequestParams, soar: SOARClient, asset: Asset) -> IndicatorOutput:
+def lookup_http_request(params: LookupHttpRequestParams, soar: SOARClient, asset: Asset) -> list[IndicatorOutput]:
     """Look up an HTTP request in Analyst1."""
     logger.info(f"Looking up HTTP request: {params.http_request}")
-    return _do_indicator_lookup(asset, params.http_request, "httpRequest")
+    return _do_indicator_lookup(soar, asset, params.http_request, "httpRequest", IndicatorOutput)
 
 
 # =============================================================================
@@ -715,9 +960,10 @@ class UploadEvidenceFileParams(Params):
         primary=True,
         default="",
         cef_types=["vault id"],
+        column_name="vault_id",
     )
     evidence_file_classification: str = Param(
-        description="The evidence file's classification.",
+        description="The evidence file's classification. Only used if a classification can not be determined during extraction.",
         default="unclass",
         value_list=[
             "unclass",
@@ -757,40 +1003,59 @@ class UploadEvidenceFileParams(Params):
         ],
     )
     tlp: str = Param(
-        description="The evidence file's TLP designation.",
+        description="The evidence file's traffic light protocol (TLP) designation. Only used if a TLP can not be determined during extraction.",
         default="undetermined",
         value_list=["undetermined", "white", "green", "amber", "red"],
     )
     source_id: int = Param(
         description="The evidence file's source ID number.",
-        required=False,
-        default=0,
+        required=True,
     )
     source_title: str = Param(
-        description="The evidence file's source name.",
+        description=(
+            "The evidence file's source name. If included, an exact match search will run against Analyst1's Evidence Sources. "
+            "If a match is found that Source will be assigned this created Evidence. The Name is used second (2nd) in Source "
+            "discovery order. If no Source discovery method is provided (ID, Name, or URL) then the Source will be 'Unknown' "
+            "on the Evidence created."
+        ),
         required=False,
         default="",
     )
     source_url: str = Param(
-        description="The evidence file's source URL.",
+        description=(
+            "The evidence file's source URL. If included, all REGEX values defined for Evidence Sources will be compared. "
+            "If a match is found the Source will be assgined this created Evidence. The URL is used third (3rd) in Source "
+            "discovery order. If no Source discovery method is provided (ID, Name, or URL) then the Source will be 'Unknown' "
+            "on the Evidence created."
+        ),
         required=False,
         default="",
     )
     disable_indicator_auto_enrichment: bool = Param(
-        description="Disable automated enrichment during ingest.",
+        description=(
+            "Influences Indicator automated enrichment during ingest. Default (false) is to allow enrichment. "
+            "Caller may override and disable automated enrichment. Value ignored if Indicator Auto Enrichment "
+            "is not enabled in this Analyst1's Admin Controls."
+        ),
         required=False,
         default=False,
     )
 
 
 class UploadEvidenceFileOutput(ActionOutput):
-    uuid: str = OutputField(cef_types=["analyst1 evidence upload key"])
+    uuid: str = OutputField(cef_types=["analyst1 evidence upload key"], column_name="UUID")
+
+
+class UploadEvidenceFileSummary(ActionOutput):
+    uuid: str | None = OutputField(cef_types=["analyst1 evidence upload key"])
 
 
 @app.action(
     description="Upload file from vault to Analyst1 as evidence file",
     action_type="generic",
     read_only=False,
+    render_as="table",
+    summary_type=UploadEvidenceFileSummary,
 )
 def upload_evidence_file(params: UploadEvidenceFileParams, soar: SOARClient, asset: Asset) -> UploadEvidenceFileOutput:
     """Upload a file from the vault to Analyst1 as evidence."""
@@ -802,12 +1067,12 @@ def upload_evidence_file(params: UploadEvidenceFileParams, soar: SOARClient, ass
         raise Analyst1Error(f"File not found in vault: {params.vault_id}")
     vault_info = attachments[0]
 
-    # Build form data
+    # Build form data (classic parity: falsy values are not sent)
     data = {}
     param_dict = params.model_dump()
     for param_key, api_key in EVIDENCE_POST_FIELD_MAP.items():
         value = param_dict.get(param_key)
-        if value is not None and value != "":
+        if value:
             data[api_key] = value
 
     # Read file and upload
@@ -825,6 +1090,7 @@ def upload_evidence_file(params: UploadEvidenceFileParams, soar: SOARClient, ass
             raise Analyst1Error("No UUID returned from evidence upload")
 
         logger.info(f"Evidence uploaded successfully, UUID: {uuid}")
+        soar.set_summary(UploadEvidenceFileSummary(uuid=uuid))
         return UploadEvidenceFileOutput(uuid=uuid)
     finally:
         client.close()
@@ -839,13 +1105,33 @@ class CheckEvidenceStatusParams(Params):
 
 
 class CheckEvidenceStatusOutput(ActionOutput):
-    message: str = ""
-    id: int | None = None
+    message: str | None = OutputField(column_name="Message")
+    id: int | None = OutputField(column_name="Evidence ID")
+
+
+class CheckEvidenceStatusSummary(ActionOutput):
+    """Runtime summary: classic sets `message` and `evidence_id`."""
+
+    message: str | None = None
+    evidence_id: int | None = None
+
+
+class CheckEvidenceStatusSummaryDatapaths(CheckEvidenceStatusSummary):
+    """Manifest summary datapaths.
+
+    The classic manifest declares summary.message and summary.id, while the
+    classic connector actually set summary.message and summary.evidence_id;
+    both key sets are declared for compatibility.
+    """
+
+    id: int | None = OutputField(cef_types=["analyst1 evidence id"])
 
 
 @app.action(
     description="Check the status of an evidence file upload",
     action_type="generic",
+    render_as="table",
+    summary_type=CheckEvidenceStatusSummaryDatapaths,
 )
 def check_evidence_status(params: CheckEvidenceStatusParams, soar: SOARClient, asset: Asset) -> CheckEvidenceStatusOutput:
     """Check the status of an evidence file upload."""
@@ -854,29 +1140,37 @@ def check_evidence_status(params: CheckEvidenceStatusParams, soar: SOARClient, a
     client = Analyst1Client(asset, asset.auth_state)
     try:
         response = client.get(f"/evidence/uploadStatus/{params.uuid}")
-        return CheckEvidenceStatusOutput(
-            message=_safe_str(response.get("message")) or "",
-            id=_safe_int(response.get("id")),
-        )
+        message = _safe_str(response.get("message"))
+        evidence_id = _safe_int(response.get("id"))
+        soar.set_summary(CheckEvidenceStatusSummary(message=message, evidence_id=evidence_id))
+        return CheckEvidenceStatusOutput(message=message, id=evidence_id)
     finally:
         client.close()
 
 
 class GetEvidenceParams(Params):
-    page: int = Param(
-        description="The specific page number to retrieve (1-indexed). Use 0 for all pages.",
+    page: int | None = Param(
+        description=(
+            "The specific page number to retrieve (1-indexed). If provided, only that single page will be returned. "
+            "If not provided, all pages will be retrieved up to the specified limit."
+        ),
         required=False,
-        default=0,
+        column_name="page",
     )
     desc_sort: bool = Param(
-        description="Sort direction. True for descending, false for ascending.",
+        description="The sort direction. True for a descending sort, false for a ascending sort.",
         required=False,
         default=True,
+        column_name="desc_sort",
     )
     sort_by: str = Param(
-        description="The value to sort results on.",
+        description=(
+            "The value to sort results on. Allowed values are 'id', 'analyzed', 'indicatorsStatus', 'title', 'tlp', "
+            "'type', 'exploitStage', 'attackPattern', 'activityDate', 'reportedDate', & 'assignedTo'."
+        ),
         required=False,
         default="id",
+        column_name="sort_by",
         value_list=[
             "analyzed",
             "activityDate",
@@ -891,12 +1185,15 @@ class GetEvidenceParams(Params):
             "type",
         ],
     )
-    evidence_type: str = Param(
-        description="Filter results based on evidence type. Leave empty for all types.",
+    type: str = Param(
+        description=(
+            "Filter results based on evidence type. Allowed values are 'pcap', 'image', 'pdf', 'txt', 'web', "
+            "'incident_04', 'stix', 'caseType', 'spreadsheet', 'doc', 'ppt', 'xml', & 'other'."
+        ),
         required=False,
         default="",
+        column_name="type",
         value_list=[
-            "",
             "pcap",
             "image",
             "pdf",
@@ -913,62 +1210,91 @@ class GetEvidenceParams(Params):
         ],
     )
     indicators_verified_date_from: str = Param(
-        description="Filter by indicators verified date from (ISO-8601).",
+        description="Filter results based on indicators verified date after (including) this provided date in ISO-8601 format.",
         required=False,
         default="",
+        column_name="indicators_verified_date_from",
     )
     indicators_verified_date_to: str = Param(
-        description="Filter by indicators verified date to (ISO-8601).",
+        description="Filter results based on indicators verified date before (including) this provided date in ISO-8601 format.",
         required=False,
         default="",
+        column_name="indicators_verified_date_to",
     )
     analyzed_date_from: str = Param(
-        description="Filter by analyzed date from (ISO-8601).",
+        description="Filter results based on analyzed date after (including) this provided date in ISO-8601 format.",
         required=False,
         default="",
+        column_name="analyzed_date_from",
     )
     analyzed_date_to: str = Param(
-        description="Filter by analyzed date to (ISO-8601).",
+        description="Filter results based on analyzed date before (including) this provided date in ISO-8601 format.",
         required=False,
         default="",
+        column_name="analyzed_date_to",
     )
-    nominated_for_incident: bool = Param(
-        description="Filter by Nominated for Incident Response State.",
+    nominated_for_incident: bool | None = Param(
+        description="Filter results based on Nominated for Incident Response State.",
         required=False,
-        default=False,
+        column_name="nominated_for_incident",
     )
-    nominated_for_report: bool = Param(
-        description="Filter by Nominated for Report State.",
+    nominated_for_report: bool | None = Param(
+        description="Filter results based on Nominated for Report State.",
         required=False,
-        default=False,
+        column_name="nominated_for_report",
     )
 
 
-class EvidenceItemOutput(ActionOutput):
-    """Single evidence item."""
+class EvidenceItemOutput(PermissiveActionOutput):
+    """Single evidence record, passed through untyped.
 
-    id: int
-    title: str | None = None
-    type: str | None = None
-    tlp: str | None = None
-    analyzedDate: str | None = None
+    Classic added each raw evidence dict as a data record and declared no
+    data.* datapaths for this action; PermissiveActionOutput reproduces that
+    lossless passthrough.
+    """
 
 
-class GetEvidenceOutput(ActionOutput):
-    """Output for get_evidence action."""
+class GetEvidenceSinglePageSummary(ActionOutput):
+    """Classic single-page summary keys (base set)."""
 
-    evidence_json: str = ""  # JSON string containing the evidence list
-    total_retrieved: int = 0
-    pages_processed: int = 0
+    page_requested: int | None = None
+    evidence_on_page: int | None = None
+
+
+class GetEvidenceSinglePageFullSummary(GetEvidenceSinglePageSummary):
+    """Classic single-page summary keys when a response was received."""
+
+    total_pages: int | None = None
+    total_results: int | None = None
+
+
+class GetEvidenceMultiPageSummary(ActionOutput):
+    """Classic multi-page summary keys."""
+
+    total_evidence_retrieved: int | None = None
+    pages_processed: int | None = None
+    max_pages_limit: int | None = None
+    limited_by: str | None = None
+
+
+class GetEvidenceMultiPageLimitedSummary(GetEvidenceMultiPageSummary):
+    """Classic multi-page summary keys when results were capped at max pages."""
+
+    note: str | None = None
 
 
 @app.action(
     description="Browse and fetch evidence resources.",
     action_type="investigate",
+    render_as="table",
 )
-def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> GetEvidenceOutput:
+def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> list[EvidenceItemOutput]:
     """Get evidence resources with pagination support."""
     logger.info("Fetching evidence resources")
+
+    page = params.page
+    if page is not None and page < 1:
+        raise ActionFailure("Page must be greater than 0")
 
     client = Analyst1Client(asset, asset.auth_state)
     try:
@@ -979,8 +1305,8 @@ def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> G
             "pageSize": 100,
         }
 
-        if params.evidence_type:
-            api_params["type"] = params.evidence_type
+        if params.type:
+            api_params["type"] = params.type
         if params.analyzed_date_from:
             api_params["analyzedDateFrom"] = params.analyzed_date_from
         if params.analyzed_date_to:
@@ -989,24 +1315,23 @@ def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> G
             api_params["indicatorsVerifiedDateFrom"] = params.indicators_verified_date_from
         if params.indicators_verified_date_to:
             api_params["indicatorsVerifiedDateTo"] = params.indicators_verified_date_to
-        if params.nominated_for_incident:
+        if params.nominated_for_incident is not None:  # Boolean - False is valid
             api_params["nominatedForIncident"] = params.nominated_for_incident
-        if params.nominated_for_report:
+        if params.nominated_for_report is not None:  # Boolean - False is valid
             api_params["nominatedForReport"] = params.nominated_for_report
 
-        # Determine pagination mode (0 = all pages up to limit)
-        if params.page > 0:
-            api_params["page"] = params.page
+        # Determine pagination mode (classic parity: no page -> up to 10 pages)
+        if page is not None:
             max_pages = 1
-            start_page = params.page
+            start_page = page
         else:
-            api_params["page"] = 1
             max_pages = 10  # Limit to 10 pages (1000 items)
             start_page = 1
 
         all_evidence: list[dict] = []
         current_page = start_page
         pages_processed = 0
+        response: dict[str, Any] | None = None
 
         while pages_processed < max_pages:
             api_params["page"] = current_page
@@ -1025,7 +1350,7 @@ def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> G
             logger.info(f"Retrieved {len(page_results)} items from page {current_page}")
 
             # Check if single page mode
-            if params.page > 0:
+            if page is not None:
                 break
 
             # Check if last page
@@ -1035,12 +1360,41 @@ def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> G
 
             current_page += 1
 
+        # Classic summary keys per pagination mode
+        if page is not None:
+            if response:
+                soar.set_summary(
+                    GetEvidenceSinglePageFullSummary(
+                        page_requested=page,
+                        evidence_on_page=len(all_evidence),
+                        total_pages=response.get("totalPages", 1),
+                        total_results=response.get("totalResults", len(all_evidence)),
+                    )
+                )
+            else:
+                soar.set_summary(GetEvidenceSinglePageSummary(page_requested=page, evidence_on_page=len(all_evidence)))
+        elif pages_processed >= max_pages and response and current_page < response.get("totalPages", 1):
+            soar.set_summary(
+                GetEvidenceMultiPageLimitedSummary(
+                    total_evidence_retrieved=len(all_evidence),
+                    pages_processed=pages_processed,
+                    max_pages_limit=max_pages,
+                    limited_by="max_pages",
+                    note=f"Results limited to {max_pages} pages. Use page parameter to access specific pages beyond page {max_pages}.",
+                )
+            )
+        else:
+            soar.set_summary(
+                GetEvidenceMultiPageSummary(
+                    total_evidence_retrieved=len(all_evidence),
+                    pages_processed=pages_processed,
+                    max_pages_limit=max_pages,
+                    limited_by="available_data",
+                )
+            )
+
         logger.info(f"Total evidence retrieved: {len(all_evidence)}")
-        return GetEvidenceOutput(
-            evidence_json=json.dumps(all_evidence),
-            total_retrieved=len(all_evidence),
-            pages_processed=pages_processed,
-        )
+        return [EvidenceItemOutput(**evidence) for evidence in all_evidence]
     finally:
         client.close()
 
