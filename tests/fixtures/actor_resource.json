@@ -1,0 +1,89 @@
+{
+  "id": 7,
+  "links": {
+    "self": {
+      "href": "https://analyst1.example.com/api/1_1/actor/7"
+    },
+    "evidence": {
+      "href": "https://analyst1.example.com/api/1_1/actor/7/evidence"
+    }
+  },
+  "title": {
+    "name": "TEST-ACTOR-BEAR",
+    "classification": "U"
+  },
+  "country": {
+    "id": 3,
+    "name": "Testland",
+    "classification": "U"
+  },
+  "sponsor": {
+    "id": 5,
+    "name": "Test Sponsor Org",
+    "classification": "U"
+  },
+  "description": {
+    "name": "A synthetic test actor for unit tests.",
+    "classification": "U"
+  },
+  "primaryMotivation": {
+    "id": 2,
+    "name": "Espionage",
+    "classification": "U"
+  },
+  "activityRange": {
+    "classification": "U",
+    "startDate": "2020-01-01",
+    "endDate": "2026-01-01"
+  },
+  "campaigns": [
+    {
+      "id": 11,
+      "name": "TEST-CAMPAIGN",
+      "classification": "U"
+    }
+  ],
+  "attackPatterns": [
+    {
+      "id": 21,
+      "name": "Spearphishing Attachment",
+      "classification": "U"
+    }
+  ],
+  "targets": [
+    {
+      "id": 31,
+      "name": "Test Sector",
+      "classification": "U"
+    }
+  ],
+  "akas": [
+    {
+      "id": 41,
+      "name": "TEST-BEAR-AKA",
+      "classification": "U"
+    }
+  ],
+  "malware": [
+    {
+      "id": 51,
+      "name": "TEST-MALWARE",
+      "classification": "U"
+    }
+  ],
+  "cves": [
+    {
+      "id": 61,
+      "name": "CVE-2020-0001",
+      "classification": "U"
+    }
+  ],
+  "secondaryMotivations": [
+    {
+      "id": 71,
+      "name": "Financial Gain",
+      "classification": "U"
+    }
+  ],
+  "personalMotivations": []
+}

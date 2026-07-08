@@ -318,19 +318,16 @@ class Analyst1Client:
         """Make a POST request."""
         return self._make_request("POST", endpoint, **kwargs)
 
-    def indicator_match(self, value: str, indicator_type: str) -> dict[str, Any] | None:
-        """Look up an indicator in Analyst1."""
-        response = self.get("/indicator/match/", params={"value": value, "type": indicator_type})
+    def _decorate_indicator(self, response: dict[str, Any]) -> None:
+        """Apply classic-app runtime decorations to an indicator payload.
 
-        if not response or not response.get("id"):
-            return None
-
-        # Classic-app runtime decorations (analyst1_connector.py, release/1.2.1):
-        # base_url for view rendering, actor links, and human-friendly
-        # enrichment result names. Unlike classic, enrichmentResults[].result
-        # is intentionally NOT json.loads()-ed into an object: the SDK output
-        # contract types it as a string, so the raw JSON string is preserved
-        # (documented delta, see release notes).
+        Classic-app runtime decorations (analyst1_connector.py, release/1.2.1):
+        base_url for view rendering, actor links, and human-friendly
+        enrichment result names. Unlike classic, enrichmentResults[].result
+        is intentionally NOT json.loads()-ed into an object: the SDK output
+        contract types it as a string, so the raw JSON string is preserved
+        (documented delta, see release notes).
+        """
         response["base_url"] = self.base_url
 
         for actor in response.get("actors") or []:
@@ -341,7 +338,38 @@ class Analyst1Client:
             enrichment_type = enrichment_result.get("type", "")
             enrichment_result["name"] = ENRICHMENT_RESULTS_NAME_MAP.get(enrichment_type, enrichment_type)
 
+    def indicator_match(self, value: str, indicator_type: str) -> dict[str, Any] | None:
+        """Look up an indicator in Analyst1."""
+        response = self.get("/indicator/match/", params={"value": value, "type": indicator_type})
+
+        if not response or not response.get("id"):
+            return None
+
+        self._decorate_indicator(response)
         return response
+
+    def get_indicator_by_id(self, indicator_id: str) -> dict[str, Any] | None:
+        """Fetch an indicator by its Analyst1 numeric id; None when not found (404).
+
+        Hash indicator ids may arrive suffixed (e.g. "14131-md5"); strip the
+        suffix like XSOAR's Client.get_indicator does.
+        """
+        clean_id = str(indicator_id).split("-")[0].split("_")[0]
+        resp = self.get(f"/indicator/{clean_id}")
+        if not resp or not resp.get("id"):
+            return None
+        self._decorate_indicator(resp)
+        return resp
+
+    def get_actor_by_id(self, actor_id: int) -> dict[str, Any] | None:
+        """Fetch an actor by its Analyst1 id; None when not found (404)."""
+        resp = self.get(f"/actor/{actor_id}")
+        return resp if resp and resp.get("id") else None
+
+    def get_malware_by_id(self, malware_id: int) -> dict[str, Any] | None:
+        """Fetch a malware family by its Analyst1 id; None when not found (404)."""
+        resp = self.get(f"/malware/{malware_id}")
+        return resp if resp and resp.get("id") else None
 
     def batch_check(self, values_csv: str) -> list[dict[str, Any]]:
         """Batch check indicator values. Returns [] when nothing matches (or 404).
@@ -1199,6 +1227,152 @@ def batch_check(params: BatchCheckParams, soar: SOARClient, asset: Asset) -> lis
         results = client.batch_check(values_csv)
         soar.set_summary(BatchCheckSummary(total_values=len(values), total_results=len(results)))
         return [BatchCheckResultOutput(**row) for row in results]
+    finally:
+        client.close()
+
+
+# =============================================================================
+# By-Id Actions
+# =============================================================================
+
+
+class ByIdSummary(ActionOutput):
+    """Runtime summary for by-id retrievals: the resource id, or unset when not found."""
+
+    id: int | None = None
+
+
+class GetIndicatorByIdParams(Params):
+    indicator_id: str = Param(
+        description="Analyst1 indicator ID (hash indicator IDs may carry a type suffix, e.g. 14131-md5; the suffix is stripped)",
+        primary=True,
+    )
+
+
+@app.action(
+    description="Fetch an indicator from the Analyst1 platform by its Analyst1 ID",
+    action_type="investigate",
+    view_handler=display_indicators_view,
+    summary_type=LookupSummaryDatapaths,
+)
+def get_indicator_by_id(params: GetIndicatorByIdParams, soar: SOARClient, asset: Asset) -> list[IndicatorOutput]:
+    """Get an indicator by its Analyst1 ID."""
+    logger.info(f"Getting indicator by id: {params.indicator_id}")
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        result = client.get_indicator_by_id(params.indicator_id)
+        if result is None:
+            return []
+        soar.set_summary(LookupSummary(id=result["id"]))
+        return [IndicatorOutput(**result)]
+    finally:
+        client.close()
+
+
+class GetActorByIdParams(Params):
+    actor_id: int = Param(
+        description="Analyst1 actor ID",
+        primary=True,
+    )
+
+
+class ActorResourceOutput(ActionOutput):
+    """A standalone actor resource (OpenAPI 2.15.0 ActorResource; GET /actor/{id}).
+
+    (`ActorOutput` is the indicator lookup's nested actor sub-model; this is
+    the full resource.) `country`/`sponsor`/`primaryMotivation` are
+    {id, name, classification} triples (verified live).
+    """
+
+    id: int | None = None
+    links: list[LinkOutput] | None = None
+    title: ClassifiedName | None = None
+    country: ClassifiedIdName | None = None
+    sponsor: ClassifiedIdName | None = None
+    description: ClassifiedName | None = None
+    primaryMotivation: ClassifiedIdName | None = None
+    activityRange: DateRangeOutput | None = None
+    campaigns: list[ClassifiedIdName] | None = None
+    attackPatterns: list[ClassifiedIdName] | None = None
+    targets: list[ClassifiedIdName] | None = None
+    akas: list[ClassifiedIdName] | None = None
+    malware: list[ClassifiedIdName] | None = None
+    cves: list[ClassifiedIdName] | None = None
+    secondaryMotivations: list[ClassifiedIdName] | None = None
+    personalMotivations: list[ClassifiedIdName] | None = None
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _normalize_links(cls, value: Any) -> Any:
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
+
+
+@app.action(
+    description="Fetch an actor from the Analyst1 platform by its Analyst1 ID",
+    action_type="investigate",
+    render_as="table",
+    summary_type=ByIdSummary,
+)
+def get_actor_by_id(params: GetActorByIdParams, soar: SOARClient, asset: Asset) -> list[ActorResourceOutput]:
+    """Get an actor by its Analyst1 ID."""
+    logger.info(f"Getting actor by id: {params.actor_id}")
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        result = client.get_actor_by_id(params.actor_id)
+        if result is None:
+            return []
+        soar.set_summary(ByIdSummary(id=result["id"]))
+        return [ActorResourceOutput(**result)]
+    finally:
+        client.close()
+
+
+class GetMalwareByIdParams(Params):
+    malware_id: int = Param(
+        description="Analyst1 malware ID",
+        primary=True,
+    )
+
+
+class MalwareResourceOutput(ActionOutput):
+    """A standalone malware resource (OpenAPI 2.15.0 MalwareResource; GET /malware/{id}).
+
+    `category`/`stage` are {id, name, classification} triples (verified live).
+    """
+
+    id: int | None = None
+    links: list[LinkOutput] | None = None
+    title: ClassifiedName | None = None
+    category: ClassifiedIdName | None = None
+    stage: ClassifiedIdName | None = None
+    description: ClassifiedName | None = None
+    akas: list[ClassifiedIdName] | None = None
+    stixObjects: list[StixObjectOutput] | None = None
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _normalize_links(cls, value: Any) -> Any:
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
+
+
+@app.action(
+    description="Fetch a malware family from the Analyst1 platform by its Analyst1 ID",
+    action_type="investigate",
+    render_as="table",
+    summary_type=ByIdSummary,
+)
+def get_malware_by_id(params: GetMalwareByIdParams, soar: SOARClient, asset: Asset) -> list[MalwareResourceOutput]:
+    """Get a malware family by its Analyst1 ID."""
+    logger.info(f"Getting malware by id: {params.malware_id}")
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        result = client.get_malware_by_id(params.malware_id)
+        if result is None:
+            return []
+        soar.set_summary(ByIdSummary(id=result["id"]))
+        return [MalwareResourceOutput(**result)]
     finally:
         client.close()
 

@@ -86,6 +86,13 @@ MISSING_STATUS_UUID = "missing-uuid"
 BATCH_NOMATCH_VALUE = "nomatch.example.com"
 BATCH_ERROR_VALUE = "batch-error.example.com"
 
+# By-id resources: the known ids of the fixture payloads (indicator reuses
+# match_xsoar.json); this id answers a 500 on any resource; other ids 404.
+MATCH_INDICATOR_ID = 12345
+ACTOR_ID = 7
+MALWARE_ID = 55
+BY_ID_ERROR_ID = 666
+
 
 def basic_asset() -> dict[str, Any]:
     """Asset configuration for Basic auth (1_0 API)."""
@@ -137,6 +144,8 @@ class MockAnalyst1API:
         self.evidence_upload_response = load_fixture("evidence_upload_response.json")
         self.evidence_pages = load_fixture("evidence_pages.json")
         self.batch_check = load_fixture("batch_check.json")
+        self.actor_resource = load_fixture("actor_resource.json")
+        self.malware_resource = load_fixture("malware_resource.json")
         # Behavior knobs
         self.token_response_status = 200
         self.token_calls = 0
@@ -177,6 +186,9 @@ class MockAnalyst1API:
             return self._handle_match(record["params"])
         if "/batchCheck" in request.url.path:
             return self._handle_batch_check(record["params"])
+        segments = [segment for segment in request.url.path.split("/") if segment]  # e.g. /api/1_0/actor/7
+        if len(segments) == 4 and segments[2] in ("indicator", "actor", "malware"):
+            return self._handle_by_id(segments[2], segments[3])
         if "/evidence/uploadStatus/" in request.url.path:
             if request.url.path.endswith(f"/{MISSING_STATUS_UUID}"):
                 return httpx.Response(404, json=NOTFOUND_BODY)
@@ -206,6 +218,19 @@ class MockAnalyst1API:
         if value == HTML_ERROR_VALUE:
             return httpx.Response(500, text=HTML_ERROR_BODY, headers={"Content-Type": "text/html"})
         return httpx.Response(200, json=self.match_map.get(value, self.match_default))
+
+    def _handle_by_id(self, resource: str, resource_id: str) -> httpx.Response:
+        if resource_id == str(BY_ID_ERROR_ID):
+            return httpx.Response(500, json={"message": "Internal server error"})
+        known = {
+            "indicator": (str(MATCH_INDICATOR_ID), self.match_default),
+            "actor": (str(ACTOR_ID), self.actor_resource),
+            "malware": (str(MALWARE_ID), self.malware_resource),
+        }
+        known_id, payload = known[resource]
+        if resource_id == known_id:
+            return httpx.Response(200, json=payload)
+        return httpx.Response(404, json=NOTFOUND_BODY)
 
     def _handle_batch_check(self, params: dict[str, Any]) -> httpx.Response:
         values = [value for value in params.get("values", "").split(",") if value]

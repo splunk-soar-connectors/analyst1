@@ -34,6 +34,9 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [lookup mutex](#action-lookup-mutex) - Check for the presence of a mutex in the Analyst1 platform <br>
 [lookup http request](#action-lookup-http-request) - Check for the presence of an HTTP request in the Analyst1 platform <br>
 [batch check](#action-batch-check) - Check a batch of indicator values (type auto-detected) against the Analyst1 platform <br>
+[get indicator by id](#action-get-indicator-by-id) - Fetch an indicator from the Analyst1 platform by its Analyst1 ID <br>
+[get actor by id](#action-get-actor-by-id) - Fetch an actor from the Analyst1 platform by its Analyst1 ID <br>
+[get malware by id](#action-get-malware-by-id) - Fetch a malware family from the Analyst1 platform by its Analyst1 ID <br>
 [upload evidence file](#action-upload-evidence-file) - Upload file from vault to Analyst1 as evidence file <br>
 [check evidence status](#action-check-evidence-status) - Check the status of an evidence file upload <br>
 [get evidence](#action-get-evidence) - Browse and fetch evidence resources.
@@ -1505,6 +1508,272 @@ action_result.data.\*.system.\*.title | string | | |
 action_result.data.\*.system.\*.akas.\* | string | | |
 action_result.summary.total_values | numeric | | |
 action_result.summary.total_results | numeric | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get indicator by id'
+
+Fetch an indicator from the Analyst1 platform by its Analyst1 ID
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**indicator_id** | required | Analyst1 indicator ID (hash indicator IDs may carry a type suffix, e.g. 14131-md5; the suffix is stripped) | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.indicator_id | string | | |
+action_result.data.\*.active | boolean | | True False |
+action_result.data.\*.activityDates.\*.classification | string | | |
+action_result.data.\*.activityDates.\*.date | string | | |
+action_result.data.\*.actors.\*.classification | string | | |
+action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.name | string | | |
+action_result.data.\*.actors.\*.link | string | | |
+action_result.data.\*.attackPatterns.\*.classification | string | | |
+action_result.data.\*.attackPatterns.\*.id | numeric | | |
+action_result.data.\*.attackPatterns.\*.name | string | | |
+action_result.data.\*.benign.classification | string | | |
+action_result.data.\*.benign.value | boolean | | True False |
+action_result.data.\*.confidenceLevel.classification | string | | |
+action_result.data.\*.confidenceLevel.value | string | | |
+action_result.data.\*.description.classification | string | | |
+action_result.data.\*.description.name | string | | |
+action_result.data.\*.domainRegistration.classification | string | | |
+action_result.data.\*.domainRegistration.name | string | | |
+action_result.data.\*.enrichmentFields.\*.type | string | | |
+action_result.data.\*.enrichmentFields.\*.value | string | | |
+action_result.data.\*.enrichmentFields.\*.name | string | | |
+action_result.data.\*.enrichmentFields.\*.numeric | string | | |
+action_result.data.\*.enrichmentFields.\*.classification | string | | |
+action_result.data.\*.enrichmentResults.\*.date | string | | |
+action_result.data.\*.enrichmentResults.\*.format | string | | |
+action_result.data.\*.enrichmentResults.\*.type | string | | |
+action_result.data.\*.enrichmentResults.\*.result | string | | |
+action_result.data.\*.enrichmentResults.\*.name | string | | |
+action_result.data.\*.exploitStage.classification | string | | |
+action_result.data.\*.exploitStage.id | numeric | | |
+action_result.data.\*.exploitStage.name | string | | |
+action_result.data.\*.fileNames.\*.classification | string | | |
+action_result.data.\*.fileNames.\*.name | string | | |
+action_result.data.\*.fileSize.value | numeric | | |
+action_result.data.\*.fileSize.classification | string | | |
+action_result.data.\*.firstHit | string | | |
+action_result.data.\*.hashes.\*.type | string | | |
+action_result.data.\*.hashes.\*.value | string | | |
+action_result.data.\*.hashes.\*.classification | string | | |
+action_result.data.\*.hitCount | numeric | | |
+action_result.data.\*.id | numeric | | |
+action_result.data.\*.ipRegistration.classification | string | | |
+action_result.data.\*.ipRegistration.name | string | | |
+action_result.data.\*.ipResolution.classification | string | | |
+action_result.data.\*.ipResolution.name | string | | |
+action_result.data.\*.lastHit | string | | |
+action_result.data.\*.links.\*.href | string | `url` | |
+action_result.data.\*.links.\*.rel | string | | |
+action_result.data.\*.malwares.\*.classification | string | | |
+action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.name | string | | |
+action_result.data.\*.originatingIps.\*.classification | string | | |
+action_result.data.\*.originatingIps.\*.name | string | | |
+action_result.data.\*.path.classification | string | | |
+action_result.data.\*.path.name | string | | |
+action_result.data.\*.ports.\*.value | numeric | | |
+action_result.data.\*.ports.\*.classification | string | | |
+action_result.data.\*.reportCount | numeric | | |
+action_result.data.\*.reportedDates.\*.classification | string | | |
+action_result.data.\*.reportedDates.\*.date | string | | |
+action_result.data.\*.requestMethods.\*.classification | string | | |
+action_result.data.\*.requestMethods.\*.name | string | | |
+action_result.data.\*.status | string | | |
+action_result.data.\*.subjects.\*.classification | string | | |
+action_result.data.\*.subjects.\*.name | string | | |
+action_result.data.\*.targets.\*.classification | string | | |
+action_result.data.\*.targets.\*.id | numeric | | |
+action_result.data.\*.targets.\*.name | string | | |
+action_result.data.\*.tasked | boolean | | True False |
+action_result.data.\*.tlp | string | | |
+action_result.data.\*.tlpCaveats | string | | |
+action_result.data.\*.tlpHighestAssociated | string | | |
+action_result.data.\*.tlpJustification | string | | |
+action_result.data.\*.tlpLowestAssociated | string | | |
+action_result.data.\*.tlpResolution | string | | |
+action_result.data.\*.type | string | | |
+action_result.data.\*.value.classification | string | | |
+action_result.data.\*.value.name | string | | |
+action_result.data.\*.verified | boolean | | True False |
+action_result.data.\*.base_url | string | | |
+action_result.data.\*.campaigns.\*.classification | string | | |
+action_result.data.\*.campaigns.\*.id | numeric | | |
+action_result.data.\*.campaigns.\*.name | string | | |
+action_result.data.\*.indicatorRiskScore.classification | string | | |
+action_result.data.\*.indicatorRiskScore.name | string | | |
+action_result.data.\*.activityRange.classification | string | | |
+action_result.data.\*.activityRange.startDate | string | | |
+action_result.data.\*.activityRange.endDate | string | | |
+action_result.data.\*.reportedRange.classification | string | | |
+action_result.data.\*.reportedRange.startDate | string | | |
+action_result.data.\*.reportedRange.endDate | string | | |
+action_result.data.\*.verifiedDateRange.classification | string | | |
+action_result.data.\*.verifiedDateRange.startDate | string | | |
+action_result.data.\*.verifiedDateRange.endDate | string | | |
+action_result.data.\*.sources.\*.id | numeric | | |
+action_result.data.\*.sources.\*.type | string | | |
+action_result.data.\*.sources.\*.title | string | | |
+action_result.data.\*.sources.\*.url | string | | |
+action_result.data.\*.sources.\*.category | string | | |
+action_result.data.\*.sources.\*.enabled | boolean | | True False |
+action_result.data.\*.tags.\*.id | numeric | | |
+action_result.data.\*.tags.\*.name | string | | |
+action_result.data.\*.externalhitCount | numeric | | |
+action_result.data.\*.firstExternalHit | string | | |
+action_result.data.\*.lastExternalHit | string | | |
+action_result.data.\*.expand | string | | |
+action_result.data.\*.indicatorDerivation | string | | |
+action_result.data.\*.integrationSources.\* | string | | |
+action_result.data.\*.stixObjects.\*.id | string | | |
+action_result.data.\*.stixObjects.\*.reportingSourceId | numeric | | |
+action_result.data.\*.stixObjects.\*.type | string | | |
+action_result.data.\*.verifications.\*.verifier | string | | |
+action_result.data.\*.verifications.\*.verifierOrg | string | | |
+action_result.data.\*.verifications.\*.verificationDate | string | | |
+action_result.data.\*.verifications.\*.evidenceId | numeric | | |
+action_result.data.\*.verifications.\*.evidenceTitle | string | | |
+action_result.data.\*.hitStatDetails.\*.label | string | | |
+action_result.data.\*.hitStatDetails.\*.external | boolean | | True False |
+action_result.data.\*.hitStatDetails.\*.firstHit | string | | |
+action_result.data.\*.hitStatDetails.\*.lastHit | string | | |
+action_result.data.\*.hitStatDetails.\*.totalHits | numeric | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.label | string | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimension | numeric | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.firstHit | string | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.lastHit | string | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.totalHits | numeric | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimensionValues.\*.id | numeric | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimensionValues.\*.label | string | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimensionValues.\*.firstHit | string | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimensionValues.\*.lastHit | string | | |
+action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimensionValues.\*.totalHits | numeric | | |
+action_result.summary.id | numeric | | |
+action_result.summary.total_objects | numeric | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get actor by id'
+
+Fetch an actor from the Analyst1 platform by its Analyst1 ID
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**actor_id** | required | Analyst1 actor ID | numeric | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.actor_id | numeric | | |
+action_result.data.\*.id | numeric | | |
+action_result.data.\*.links.\*.href | string | `url` | |
+action_result.data.\*.links.\*.rel | string | | |
+action_result.data.\*.title.classification | string | | |
+action_result.data.\*.title.name | string | | |
+action_result.data.\*.country.classification | string | | |
+action_result.data.\*.country.id | numeric | | |
+action_result.data.\*.country.name | string | | |
+action_result.data.\*.sponsor.classification | string | | |
+action_result.data.\*.sponsor.id | numeric | | |
+action_result.data.\*.sponsor.name | string | | |
+action_result.data.\*.description.classification | string | | |
+action_result.data.\*.description.name | string | | |
+action_result.data.\*.primaryMotivation.classification | string | | |
+action_result.data.\*.primaryMotivation.id | numeric | | |
+action_result.data.\*.primaryMotivation.name | string | | |
+action_result.data.\*.activityRange.classification | string | | |
+action_result.data.\*.activityRange.startDate | string | | |
+action_result.data.\*.activityRange.endDate | string | | |
+action_result.data.\*.campaigns.\*.classification | string | | |
+action_result.data.\*.campaigns.\*.id | numeric | | |
+action_result.data.\*.campaigns.\*.name | string | | |
+action_result.data.\*.attackPatterns.\*.classification | string | | |
+action_result.data.\*.attackPatterns.\*.id | numeric | | |
+action_result.data.\*.attackPatterns.\*.name | string | | |
+action_result.data.\*.targets.\*.classification | string | | |
+action_result.data.\*.targets.\*.id | numeric | | |
+action_result.data.\*.targets.\*.name | string | | |
+action_result.data.\*.akas.\*.classification | string | | |
+action_result.data.\*.akas.\*.id | numeric | | |
+action_result.data.\*.akas.\*.name | string | | |
+action_result.data.\*.malware.\*.classification | string | | |
+action_result.data.\*.malware.\*.id | numeric | | |
+action_result.data.\*.malware.\*.name | string | | |
+action_result.data.\*.cves.\*.classification | string | | |
+action_result.data.\*.cves.\*.id | numeric | | |
+action_result.data.\*.cves.\*.name | string | | |
+action_result.data.\*.secondaryMotivations.\*.classification | string | | |
+action_result.data.\*.secondaryMotivations.\*.id | numeric | | |
+action_result.data.\*.secondaryMotivations.\*.name | string | | |
+action_result.data.\*.personalMotivations.\*.classification | string | | |
+action_result.data.\*.personalMotivations.\*.id | numeric | | |
+action_result.data.\*.personalMotivations.\*.name | string | | |
+action_result.summary.id | numeric | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'get malware by id'
+
+Fetch a malware family from the Analyst1 platform by its Analyst1 ID
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**malware_id** | required | Analyst1 malware ID | numeric | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.malware_id | numeric | | |
+action_result.data.\*.id | numeric | | |
+action_result.data.\*.links.\*.href | string | `url` | |
+action_result.data.\*.links.\*.rel | string | | |
+action_result.data.\*.title.classification | string | | |
+action_result.data.\*.title.name | string | | |
+action_result.data.\*.category.classification | string | | |
+action_result.data.\*.category.id | numeric | | |
+action_result.data.\*.category.name | string | | |
+action_result.data.\*.stage.classification | string | | |
+action_result.data.\*.stage.id | numeric | | |
+action_result.data.\*.stage.name | string | | |
+action_result.data.\*.description.classification | string | | |
+action_result.data.\*.description.name | string | | |
+action_result.data.\*.akas.\*.classification | string | | |
+action_result.data.\*.akas.\*.id | numeric | | |
+action_result.data.\*.akas.\*.name | string | | |
+action_result.data.\*.stixObjects.\*.id | string | | |
+action_result.data.\*.stixObjects.\*.reportingSourceId | numeric | | |
+action_result.data.\*.stixObjects.\*.type | string | | |
+action_result.summary.id | numeric | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
