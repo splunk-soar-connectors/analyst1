@@ -30,6 +30,7 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.asset_state import AssetState
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
+from soar_sdk.meta.app import AppContributor
 from soar_sdk.params import Param, Params
 
 
@@ -470,6 +471,13 @@ app = App(
     fips_compliant=False,
     asset_cls=Asset,
 )
+
+# Splunk's connector contribution rules require a contributors entry in the app
+# manifest. SDK 3.25.3 offers no first-class way to declare contributors (App()
+# does not accept them and the pyproject adapter does not map project authors),
+# but the SDK's ManifestProcessor copies every app_meta_info entry onto the
+# generated manifest, so inject the SDK's canonical contributor model here.
+app.app_meta_info["contributors"] = [AppContributor(name="Mike Forgione (Analytica 42)")]
 
 
 # =============================================================================
