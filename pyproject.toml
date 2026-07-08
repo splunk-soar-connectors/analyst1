@@ -2,7 +2,7 @@
 name = "analyst1"
 version = "2.0.0"
 description = "Interact with the Analyst1 API to power SOAR workflows, including indicator lookups, evidence management, and other supported Analyst1 operations."
-license = "Copyright (c) Analyst1, 2025"
+license = "Copyright (c) 2025-2026 Analyst1"
 requires-python = ">=3.13, <3.15"
 authors = [
     { name = "Mike Forgione" },
