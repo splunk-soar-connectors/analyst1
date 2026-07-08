@@ -15,7 +15,6 @@
 
 import pytest
 
-import app as analyst1_app
 from tests.conftest import MISSING_STATUS_UUID
 
 
@@ -55,16 +54,14 @@ class TestUploadEvidenceFile:
         ):
             assert b'name="' + api_field + b'"' in body
             assert api_value in body
-        # contributor_consent is not an exposed action param, so neither the
-        # (intentionally misspelled) API key nor a corrected variant is sent.
+        # Contributor fields were never exposed as action params (classic parity:
+        # its field map defined them but analyst1.json never offered them, so
+        # nothing was ever sent); the dead map entries were removed in 2.0.0.
         assert b"contibutorConsent" not in body
         assert b"contributorConsent" not in body
+        assert b"contributorOrg" not in body
         # Falsy values are not sent (classic parity): default False stays home.
         assert b"disableIndicatorAutoEnrichment" not in body
-
-    def test_field_map_preserves_api_misspelling(self):
-        # The Analyst1 API expects the misspelled key; a "fix" would break uploads.
-        assert analyst1_app.EVIDENCE_POST_FIELD_MAP["contributor_consent"] == "contibutorConsent"
 
     def test_missing_vault_id_fails_before_any_api_call(self, api, run_action):
         result = run_action("upload_evidence_file", {**UPLOAD_PARAMS, "vault_id": "no-such-vault-id"})

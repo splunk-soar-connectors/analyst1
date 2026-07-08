@@ -73,10 +73,6 @@ EVIDENCE_POST_FIELD_MAP = {
     "source_id": "sourceId",
     "source_title": "sourceTitle",
     "source_url": "sourceUrl",
-    "iso_contributor_country_code": "isoContributorCountryCode",
-    "iso_contributor_region_code": "isoContributorRegionCode",
-    "contributor_org": "contributorOrg",
-    "contributor_consent": "contibutorConsent",
     "disable_indicator_auto_enrichment": "disableIndicatorAutoEnrichment",
 }
 
