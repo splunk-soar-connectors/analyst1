@@ -37,7 +37,7 @@ class TestViewContext:
 
         assert context["title1"] == "Analyst1 Indicator Lookup"
         assert context["title2"] == "Threat Intelligence"
-        assert context["title_logo"] == "analyst1.png"
+        assert context["title_logo"] == "logo_analyst1.svg"
         (result,) = context["results"]
         (record,) = result["data"]
         assert record["id"] == 90000948

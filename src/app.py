@@ -485,8 +485,8 @@ class Analyst1Client:
 app = App(
     name="Analyst1",
     app_type="information",
-    logo="analyst1.png",
-    logo_dark="analyst1_dark.png",
+    logo="logo_analyst1.svg",
+    logo_dark="logo_analyst1_dark.svg",
     product_vendor="Analyst1",
     product_name="Analyst1",
     publisher="Analyst1",
@@ -1207,7 +1207,7 @@ def display_indicators_view(outputs: list[IndicatorOutput]) -> dict:
         "results": results,
         "title1": "Analyst1 Indicator Lookup",
         "title2": "Threat Intelligence",
-        "title_logo": "analyst1.png",
+        "title_logo": "logo_analyst1.svg",
     }
 
 
