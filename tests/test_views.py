@@ -69,7 +69,7 @@ class TestViewContext:
         output = analyst1_app.IndicatorOutput(
             id=7,
             actors=[analyst1_app.ActorOutput(name="No Id Actor")],
-            malwares=[analyst1_app.ClassifiedIdName(name="No Id Malware")],
+            malwares=[analyst1_app.MalwareRefOutput(name="No Id Malware")],
             ports=[analyst1_app.PortOutput(classification="U")],
             originatingIps=[analyst1_app.ClassifiedName(classification="U")],
             subjects=[analyst1_app.ClassifiedName(classification="U")],

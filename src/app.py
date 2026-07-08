@@ -572,9 +572,24 @@ class ClassifiedIdName(ActionOutput):
 
 
 class ActorOutput(ClassifiedIdName):
-    """A threat actor; `link` is a classic runtime decoration built from base_url."""
+    """A threat actor; `link` is a classic runtime decoration built from base_url.
 
+    `id` overrides the shared ClassifiedIdName field only to add the actor-id
+    contains (field set unchanged; zero datapath change).
+    """
+
+    id: int | None = OutputField(cef_types=["analyst1 actor id"])
     link: str | None = None
+
+
+class MalwareRefOutput(ClassifiedIdName):
+    """A malware family reference (indicator/actor `malware(s)` lists).
+
+    Exists only to add the malware-id contains on `id` without mistagging the
+    shared ClassifiedIdName model (field set unchanged; zero datapath change).
+    """
+
+    id: int | None = OutputField(cef_types=["analyst1 malware id"])
 
 
 class BenignOutput(ActionOutput):
@@ -779,12 +794,12 @@ class IndicatorOutput(ActionOutput):
     firstHit: str | None = None
     hashes: list[HashOutput] | None = None
     hitCount: int | None = None
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 indicator id"])
     ipRegistration: ClassifiedName | None = None
     ipResolution: ClassifiedName | None = None
     lastHit: str | None = None
     links: list[LinkOutput] | None = None
-    malwares: list[ClassifiedIdName] | None = None
+    malwares: list[MalwareRefOutput] | None = None
     originatingIps: list[ClassifiedName] | None = None
     path: ClassifiedName | None = None
     ports: list[PortOutput] | None = None
@@ -861,7 +876,7 @@ class TaskingIndicatorOutput(ActionOutput):
     a JSON string (see _lenient_str).
     """
 
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 indicator id"])
     type: str | None = None
     value: str | None = None
     classification: str | None = None
@@ -1040,6 +1055,7 @@ class LookupIpv6Params(Params):
         description="IPv6 to lookup",
         primary=True,
         default="",
+        cef_types=["ipv6"],
     )
 
 
@@ -1326,6 +1342,7 @@ class BatchCheckParams(Params):
             "The combined length is limited to 6000 characters (URL length limit); split larger inputs."
         ),
         primary=True,
+        cef_types=["ip", "domain", "url", "hash", "email"],
     )
 
 
@@ -1340,7 +1357,7 @@ class BatchCheckResultOutput(ActionOutput):
 
     searchedValue: str | None = None
     matchedValue: str | None = None
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 indicator id"])
     entity: EnumDtoOutput | None = None
     type: EnumDtoOutput | None = None
     benign: bool | None = None
@@ -1398,6 +1415,7 @@ class GetIndicatorByIdParams(Params):
     indicator_id: str = Param(
         description="Analyst1 indicator ID (hash indicator IDs may carry a type suffix, e.g. 14131-md5; the suffix is stripped)",
         primary=True,
+        cef_types=["analyst1 indicator id"],
     )
 
 
@@ -1425,6 +1443,7 @@ class GetActorByIdParams(Params):
     actor_id: int = Param(
         description="Analyst1 actor ID",
         primary=True,
+        cef_types=["analyst1 actor id"],
     )
 
 
@@ -1436,7 +1455,7 @@ class ActorResourceOutput(ActionOutput):
     {id, name, classification} triples (verified live).
     """
 
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 actor id"])
     links: list[LinkOutput] | None = None
     title: ClassifiedName | None = None
     country: ClassifiedIdName | None = None
@@ -1448,7 +1467,7 @@ class ActorResourceOutput(ActionOutput):
     attackPatterns: list[ClassifiedIdName] | None = None
     targets: list[ClassifiedIdName] | None = None
     akas: list[ClassifiedIdName] | None = None
-    malware: list[ClassifiedIdName] | None = None
+    malware: list[MalwareRefOutput] | None = None
     cves: list[ClassifiedIdName] | None = None
     secondaryMotivations: list[ClassifiedIdName] | None = None
     personalMotivations: list[ClassifiedIdName] | None = None
@@ -1484,6 +1503,7 @@ class GetMalwareByIdParams(Params):
     malware_id: int = Param(
         description="Analyst1 malware ID",
         primary=True,
+        cef_types=["analyst1 malware id"],
     )
 
 
@@ -1493,7 +1513,7 @@ class MalwareResourceOutput(ActionOutput):
     `category`/`stage` are {id, name, classification} triples (verified live).
     """
 
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 malware id"])
     links: list[LinkOutput] | None = None
     title: ClassifiedName | None = None
     category: ClassifiedIdName | None = None
@@ -2038,7 +2058,7 @@ class SensorOutput(ActionOutput):
     `org` and `logicalLocation` are null on some live rows.
     """
 
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 sensor id"])
     name: str | None = None
     logicalLocation: str | None = None
     org: SensorOrgOutput | None = None
@@ -2143,13 +2163,14 @@ class GetSensorTaskingsParams(Params):
     sensor_id: int = Param(
         description="Analyst1 sensor ID",
         primary=True,
+        cef_types=["analyst1 sensor id"],
     )
 
 
 class SensorTaskingsOutput(ActionOutput):
     """A sensor's current taskings (spec "Model for sensor taskings.")."""
 
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 sensor id"])
     version: int | None = None
     indicators: list[TaskingIndicatorOutput] | None = None
     rules: list[TaskingRuleOutput] | None = None
@@ -2198,11 +2219,12 @@ class GetSensorConfigParams(Params):
     sensor_id: int = Param(
         description="Analyst1 sensor ID",
         primary=True,
+        cef_types=["analyst1 sensor id"],
     )
 
 
 class SensorConfigOutput(ActionOutput):
-    sensor_id: int | None = None
+    sensor_id: int | None = OutputField(cef_types=["analyst1 sensor id"])
     vault_id: str | None = OutputField(cef_types=["vault id"])
     file_name: str | None = None
     config_text: str | None = None
@@ -2248,6 +2270,7 @@ def get_sensor_config(params: GetSensorConfigParams, soar: SOARClient, asset: As
 class GetSensorDiffParams(Params):
     sensor_id: int = Param(
         description="Analyst1 sensor ID",
+        cef_types=["analyst1 sensor id"],
     )
     version: int = Param(
         description="The sensor config version to diff against the latest version",
@@ -2258,7 +2281,7 @@ class GetSensorDiffParams(Params):
 class SensorDiffOutput(ActionOutput):
     """A tasking diff between a sensor config version and the latest (spec SensorDiff)."""
 
-    id: int | None = None
+    id: int | None = OutputField(cef_types=["analyst1 sensor id"])
     version: int | None = None
     latestVersion: int | None = None
     indicatorsAdded: list[TaskingIndicatorOutput] | None = None

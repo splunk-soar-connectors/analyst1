@@ -118,7 +118,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -154,7 +154,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -163,7 +163,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -274,7 +274,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -310,7 +310,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -319,7 +319,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -430,7 +430,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -466,7 +466,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -475,7 +475,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -586,7 +586,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -622,7 +622,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -631,7 +631,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -742,7 +742,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -778,7 +778,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -787,7 +787,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -885,7 +885,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**ipv6** | required | IPv6 to lookup | string | |
+**ipv6** | required | IPv6 to lookup | string | `ipv6` |
 
 #### Action Output
 
@@ -893,12 +893,12 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.ipv6 | string | | |
+action_result.parameter.ipv6 | string | `ipv6` | |
 action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -934,7 +934,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -943,7 +943,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -1054,7 +1054,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -1090,7 +1090,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -1099,7 +1099,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -1210,7 +1210,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -1246,7 +1246,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -1255,7 +1255,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -1366,7 +1366,7 @@ action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -1402,7 +1402,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -1411,7 +1411,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -1509,7 +1509,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**values** | required | Comma- or newline-separated indicator values to check; the indicator type of each value is auto-detected. The combined length is limited to 6000 characters (URL length limit); split larger inputs. | string | |
+**values** | required | Comma- or newline-separated indicator values to check; the indicator type of each value is auto-detected. The combined length is limited to 6000 characters (URL length limit); split larger inputs. | string | `ip` `domain` `url` `hash` `email` |
 
 #### Action Output
 
@@ -1517,10 +1517,10 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.values | string | | |
+action_result.parameter.values | string | `ip` `domain` `url` `hash` `email` | |
 action_result.data.\*.searchedValue | string | | |
 action_result.data.\*.matchedValue | string | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.entity.key | string | | |
 action_result.data.\*.entity.title | string | | |
 action_result.data.\*.type.key | string | | |
@@ -1553,7 +1553,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**indicator_id** | required | Analyst1 indicator ID (hash indicator IDs may carry a type suffix, e.g. 14131-md5; the suffix is stripped) | string | |
+**indicator_id** | required | Analyst1 indicator ID (hash indicator IDs may carry a type suffix, e.g. 14131-md5; the suffix is stripped) | string | `analyst1 indicator id` |
 
 #### Action Output
 
@@ -1561,12 +1561,12 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.indicator_id | string | | |
+action_result.parameter.indicator_id | string | `analyst1 indicator id` | |
 action_result.data.\*.active | boolean | | True False |
 action_result.data.\*.activityDates.\*.classification | string | | |
 action_result.data.\*.activityDates.\*.date | string | | |
 action_result.data.\*.actors.\*.classification | string | | |
-action_result.data.\*.actors.\*.id | numeric | | |
+action_result.data.\*.actors.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.actors.\*.name | string | | |
 action_result.data.\*.actors.\*.link | string | | |
 action_result.data.\*.attackPatterns.\*.classification | string | | |
@@ -1602,7 +1602,7 @@ action_result.data.\*.hashes.\*.type | string | | |
 action_result.data.\*.hashes.\*.value | string | | |
 action_result.data.\*.hashes.\*.classification | string | | |
 action_result.data.\*.hitCount | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.ipRegistration.classification | string | | |
 action_result.data.\*.ipRegistration.name | string | | |
 action_result.data.\*.ipResolution.classification | string | | |
@@ -1611,7 +1611,7 @@ action_result.data.\*.lastHit | string | | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.malwares.\*.classification | string | | |
-action_result.data.\*.malwares.\*.id | numeric | | |
+action_result.data.\*.malwares.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malwares.\*.name | string | | |
 action_result.data.\*.originatingIps.\*.classification | string | | |
 action_result.data.\*.originatingIps.\*.name | string | | |
@@ -1709,7 +1709,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**actor_id** | required | Analyst1 actor ID | numeric | |
+**actor_id** | required | Analyst1 actor ID | numeric | `analyst1 actor id` |
 
 #### Action Output
 
@@ -1717,8 +1717,8 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.actor_id | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.parameter.actor_id | numeric | `analyst1 actor id` | |
+action_result.data.\*.id | numeric | `analyst1 actor id` | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.title.classification | string | | |
@@ -1750,7 +1750,7 @@ action_result.data.\*.akas.\*.classification | string | | |
 action_result.data.\*.akas.\*.id | numeric | | |
 action_result.data.\*.akas.\*.name | string | | |
 action_result.data.\*.malware.\*.classification | string | | |
-action_result.data.\*.malware.\*.id | numeric | | |
+action_result.data.\*.malware.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.malware.\*.name | string | | |
 action_result.data.\*.cves.\*.classification | string | | |
 action_result.data.\*.cves.\*.id | numeric | | |
@@ -1776,7 +1776,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**malware_id** | required | Analyst1 malware ID | numeric | |
+**malware_id** | required | Analyst1 malware ID | numeric | `analyst1 malware id` |
 
 #### Action Output
 
@@ -1784,8 +1784,8 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.malware_id | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.parameter.malware_id | numeric | `analyst1 malware id` | |
+action_result.data.\*.id | numeric | `analyst1 malware id` | |
 action_result.data.\*.links.\*.href | string | `url` | |
 action_result.data.\*.links.\*.rel | string | | |
 action_result.data.\*.title.classification | string | | |
@@ -1946,7 +1946,7 @@ action_result.parameter.org | numeric | | |
 action_result.parameter.logical_location | string | | |
 action_result.parameter.desc_sort | boolean | | |
 action_result.parameter.sort_by | string | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 sensor id` | |
 action_result.data.\*.name | string | | |
 action_result.data.\*.logicalLocation | string | | |
 action_result.data.\*.org.id | numeric | | |
@@ -1973,7 +1973,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**sensor_id** | required | Analyst1 sensor ID | numeric | |
+**sensor_id** | required | Analyst1 sensor ID | numeric | `analyst1 sensor id` |
 
 #### Action Output
 
@@ -1981,10 +1981,10 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.sensor_id | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.parameter.sensor_id | numeric | `analyst1 sensor id` | |
+action_result.data.\*.id | numeric | `analyst1 sensor id` | |
 action_result.data.\*.version | numeric | | |
-action_result.data.\*.indicators.\*.id | numeric | | |
+action_result.data.\*.indicators.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.indicators.\*.type | string | | |
 action_result.data.\*.indicators.\*.value | string | | |
 action_result.data.\*.indicators.\*.classification | string | | |
@@ -2016,7 +2016,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**sensor_id** | required | Analyst1 sensor ID | numeric | |
+**sensor_id** | required | Analyst1 sensor ID | numeric | `analyst1 sensor id` |
 
 #### Action Output
 
@@ -2024,8 +2024,8 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.sensor_id | numeric | | |
-action_result.data.\*.sensor_id | numeric | | |
+action_result.parameter.sensor_id | numeric | `analyst1 sensor id` | |
+action_result.data.\*.sensor_id | numeric | `analyst1 sensor id` | |
 action_result.data.\*.vault_id | string | `vault id` | |
 action_result.data.\*.file_name | string | | |
 action_result.data.\*.config_text | string | | |
@@ -2045,7 +2045,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**sensor_id** | required | Analyst1 sensor ID | numeric | |
+**sensor_id** | required | Analyst1 sensor ID | numeric | `analyst1 sensor id` |
 **version** | required | The sensor config version to diff against the latest version | numeric | |
 
 #### Action Output
@@ -2054,19 +2054,19 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 --------- | ---- | -------- | --------------
 action_result.status | string | | success failure |
 action_result.message | string | | |
-action_result.parameter.sensor_id | numeric | | |
+action_result.parameter.sensor_id | numeric | `analyst1 sensor id` | |
 action_result.parameter.version | numeric | | |
-action_result.data.\*.id | numeric | | |
+action_result.data.\*.id | numeric | `analyst1 sensor id` | |
 action_result.data.\*.version | numeric | | |
 action_result.data.\*.latestVersion | numeric | | |
-action_result.data.\*.indicatorsAdded.\*.id | numeric | | |
+action_result.data.\*.indicatorsAdded.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.indicatorsAdded.\*.type | string | | |
 action_result.data.\*.indicatorsAdded.\*.value | string | | |
 action_result.data.\*.indicatorsAdded.\*.classification | string | | |
 action_result.data.\*.indicatorsAdded.\*.fileHashes | string | | |
 action_result.data.\*.indicatorsAdded.\*.links.\*.href | string | `url` | |
 action_result.data.\*.indicatorsAdded.\*.links.\*.rel | string | | |
-action_result.data.\*.indicatorsRemoved.\*.id | numeric | | |
+action_result.data.\*.indicatorsRemoved.\*.id | numeric | `analyst1 indicator id` | |
 action_result.data.\*.indicatorsRemoved.\*.type | string | | |
 action_result.data.\*.indicatorsRemoved.\*.value | string | | |
 action_result.data.\*.indicatorsRemoved.\*.classification | string | | |

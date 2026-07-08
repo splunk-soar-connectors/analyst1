@@ -3,6 +3,7 @@
 * Add batch check action: check a batch of indicator values (type auto-detected by the API) against the Analyst1 platform
 * Add get indicator by id, get actor by id, and get malware by id actions to fetch Analyst1 resources by their numeric ID
 * Add sensor actions: get sensors, get sensor taskings, get sensor config (stores the configuration file in the vault), and get sensor diff
+* Add contains types to the new actions' parameters and id output fields (analyst1 indicator id, analyst1 actor id, analyst1 malware id, analyst1 sensor id; broad indicator types on batch check values and ipv6 on lookup ipv6) to enable contextual action pivots in the SOAR UI
 * Restore the classic nested action_result.data.* datapath contract on all lookup actions
 * enrichmentResults.*.result is now always a JSON string; previous versions parsed json-format enrichment results into an object at runtime
 * Datapath shape corrections on lookup actions: exploitStage (.id/.name/.classification), path (.name/.classification), fileSize (.value/.classification), and domainRegistration (.name/.classification) are objects, originatingIps is a list of objects, and hitCount is numeric, matching actual API payloads and the Analyst1 OpenAPI 2.15.0 specification
