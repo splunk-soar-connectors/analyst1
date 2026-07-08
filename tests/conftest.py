@@ -81,6 +81,11 @@ HTML_ERROR_BODY = "<html><body><h1>Internal Server Error</h1></body></html>"
 # Evidence uploadStatus uuid that answers 404 (upload key not found).
 MISSING_STATUS_UUID = "missing-uuid"
 
+# batchCheck: this value alone answers an empty {"results": []} envelope; the
+# error value (anywhere in the csv) answers a 500.
+BATCH_NOMATCH_VALUE = "nomatch.example.com"
+BATCH_ERROR_VALUE = "batch-error.example.com"
+
 
 def basic_asset() -> dict[str, Any]:
     """Asset configuration for Basic auth (1_0 API)."""
@@ -131,6 +136,7 @@ class MockAnalyst1API:
         self.evidence_status = load_fixture("evidence_status.json")
         self.evidence_upload_response = load_fixture("evidence_upload_response.json")
         self.evidence_pages = load_fixture("evidence_pages.json")
+        self.batch_check = load_fixture("batch_check.json")
         # Behavior knobs
         self.token_response_status = 200
         self.token_calls = 0
@@ -169,6 +175,8 @@ class MockAnalyst1API:
             return httpx.Response(401, json={"message": "Unauthorized"})
         if "/indicator/match" in request.url.path:
             return self._handle_match(record["params"])
+        if "/batchCheck" in request.url.path:
+            return self._handle_batch_check(record["params"])
         if "/evidence/uploadStatus/" in request.url.path:
             if request.url.path.endswith(f"/{MISSING_STATUS_UUID}"):
                 return httpx.Response(404, json=NOTFOUND_BODY)
@@ -198,6 +206,14 @@ class MockAnalyst1API:
         if value == HTML_ERROR_VALUE:
             return httpx.Response(500, text=HTML_ERROR_BODY, headers={"Content-Type": "text/html"})
         return httpx.Response(200, json=self.match_map.get(value, self.match_default))
+
+    def _handle_batch_check(self, params: dict[str, Any]) -> httpx.Response:
+        values = [value for value in params.get("values", "").split(",") if value]
+        if BATCH_ERROR_VALUE in values:
+            return httpx.Response(500, json={"message": "Internal server error"})
+        if set(values) == {BATCH_NOMATCH_VALUE}:
+            return httpx.Response(200, json={"results": []})
+        return httpx.Response(200, json=self.batch_check)
 
     def _handle_evidence_list(self, params: dict[str, Any]) -> httpx.Response:
         page = int(params.get("page", "1"))

@@ -33,6 +33,7 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [lookup url](#action-lookup-url) - Check for the presence of a URL in the Analyst1 platform <br>
 [lookup mutex](#action-lookup-mutex) - Check for the presence of a mutex in the Analyst1 platform <br>
 [lookup http request](#action-lookup-http-request) - Check for the presence of an HTTP request in the Analyst1 platform <br>
+[batch check](#action-batch-check) - Check a batch of indicator values (type auto-detected) against the Analyst1 platform <br>
 [upload evidence file](#action-upload-evidence-file) - Upload file from vault to Analyst1 as evidence file <br>
 [check evidence status](#action-check-evidence-status) - Check the status of an evidence file upload <br>
 [get evidence](#action-get-evidence) - Browse and fetch evidence resources.
@@ -1460,6 +1461,50 @@ action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimensionValues.\*.lastHit
 action_result.data.\*.hitStatDetails.\*.dimensions.\*.dimensionValues.\*.totalHits | numeric | | |
 action_result.summary.id | numeric | | |
 action_result.summary.total_objects | numeric | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'batch check'
+
+Check a batch of indicator values (type auto-detected) against the Analyst1 platform
+
+Type: **investigate** <br>
+Read only: **True**
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**values** | required | Comma- or newline-separated indicator values to check; the indicator type of each value is auto-detected. The combined length is limited to 6000 characters (URL length limit); split larger inputs. | string | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.values | string | | |
+action_result.data.\*.searchedValue | string | | |
+action_result.data.\*.matchedValue | string | | |
+action_result.data.\*.id | numeric | | |
+action_result.data.\*.entity.key | string | | |
+action_result.data.\*.entity.title | string | | |
+action_result.data.\*.type.key | string | | |
+action_result.data.\*.type.title | string | | |
+action_result.data.\*.benign | boolean | | True False |
+action_result.data.\*.indicatorRiskScore.key | string | | |
+action_result.data.\*.indicatorRiskScore.title | string | | |
+action_result.data.\*.actor.\*.id | numeric | | |
+action_result.data.\*.actor.\*.title | string | | |
+action_result.data.\*.actor.\*.akas.\* | string | | |
+action_result.data.\*.malware.\*.id | numeric | | |
+action_result.data.\*.malware.\*.title | string | | |
+action_result.data.\*.malware.\*.akas.\* | string | | |
+action_result.data.\*.system.\*.id | numeric | | |
+action_result.data.\*.system.\*.title | string | | |
+action_result.data.\*.system.\*.akas.\* | string | | |
+action_result.summary.total_values | numeric | | |
+action_result.summary.total_results | numeric | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 

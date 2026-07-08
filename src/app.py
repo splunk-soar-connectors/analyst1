@@ -343,6 +343,19 @@ class Analyst1Client:
 
         return response
 
+    def batch_check(self, values_csv: str) -> list[dict[str, Any]]:
+        """Batch check indicator values. Returns [] when nothing matches (or 404).
+
+        The live API returns a {"results": [...]} envelope. Parse it, but
+        tolerate a bare array defensively in case a future/older deployment
+        differs.
+        """
+        resp = self.get("/batchCheck", params={"values": values_csv})
+        if isinstance(resp, dict):
+            results = resp.get("results")
+            return results if isinstance(results, list) else []
+        return resp if isinstance(resp, list) else []
+
 
 # =============================================================================
 # App Definition
@@ -387,6 +400,22 @@ def _lenient_str(value: Any) -> str | None:
     if isinstance(value, int | float | bool):
         return str(value)
     return json.dumps(value)
+
+
+def _links_to_list(value: Any) -> Any:
+    """Coerce the 1_1 object-form `links` serialization to the classic list form.
+
+    The 1_1 (OAuth) API serializes links as an object
+    ({"self": {"href": ...}, "evidence": {...}, ...}); the 1_0 API and the
+    classic manifest contract use a list of {rel, href}. Coerce the object
+    form to the list form, preserving insertion order, so playbooks see an
+    identical links.* list under both auth modes. hrefs are emitted verbatim
+    (no XSOAR-style URL rewriting). Anything else passes through to normal
+    validation (lenient posture; never raise here).
+    """
+    if isinstance(value, dict):
+        return [{"rel": rel, "href": item.get("href") if isinstance(item, dict) else None} for rel, item in value.items()]
+    return value
 
 
 class ClassifiedDate(ActionOutput):
@@ -668,17 +697,23 @@ class IndicatorOutput(ActionOutput):
     @field_validator("links", mode="before")
     @classmethod
     def _normalize_links(cls, value: Any) -> Any:
-        # The 1_1 (OAuth) API serializes links as an object
-        # ({"self": {"href": ...}, "evidence": {...}, ...}); the 1_0 API and
-        # the classic manifest contract use a list of {rel, href}. Coerce the
-        # object form to the list form, preserving insertion order, so
-        # playbooks see an identical links.* list under both auth modes.
-        # hrefs are emitted verbatim (no XSOAR-style URL rewriting). Anything
-        # else passes through to normal validation (lenient posture; never
-        # raise here).
-        if isinstance(value, dict):
-            return [{"rel": rel, "href": item.get("href") if isinstance(item, dict) else None} for rel, item in value.items()]
-        return value
+        # 1_1 object-form links -> classic {rel, href} list (see _links_to_list).
+        return _links_to_list(value)
+
+
+class EnumDtoOutput(ActionOutput):
+    """A key/title enum pair (OpenAPI 2.15.0 EnumDto; batchCheck entity/type/indicatorRiskScore)."""
+
+    key: str | None = None
+    title: str | None = None
+
+
+class AkaDtoOutput(ActionOutput):
+    """An associated entity with aliases (OpenAPI 2.15.0 AkaDto; batchCheck actor/malware/system)."""
+
+    id: int | None = None
+    title: str | None = None
+    akas: list[str] | None = None
 
 
 # Per-action `value.name` CEF types (from the classic manifest; lookup_ipv6,
@@ -1092,6 +1127,80 @@ def lookup_http_request(params: LookupHttpRequestParams, soar: SOARClient, asset
     """Look up an HTTP request in Analyst1."""
     logger.info(f"Looking up HTTP request: {params.http_request}")
     return _do_indicator_lookup(soar, asset, params.http_request, "httpRequest", IndicatorOutput)
+
+
+# =============================================================================
+# Batch Check Action
+# =============================================================================
+
+
+# Hard guard against the GET variant's URL-length ceiling; a POST/file variant
+# that would lift it is a deferred parity item.
+BATCH_CHECK_MAX_VALUES_LENGTH = 6000
+
+
+class BatchCheckParams(Params):
+    values: str = Param(
+        description=(
+            "Comma- or newline-separated indicator values to check; the indicator type of each value is auto-detected. "
+            "The combined length is limited to 6000 characters (URL length limit); split larger inputs."
+        ),
+        primary=True,
+    )
+
+
+class BatchCheckResultOutput(ActionOutput):
+    """A batchCheck row (OpenAPI 2.15.0 BatchCheckResult).
+
+    Shapes intentionally differ from IndicatorOutput: `benign` is a plain
+    boolean and `entity`/`type`/`indicatorRiskScore` are EnumDto {key, title}
+    pairs. Live rows commonly carry `benign: null` and
+    `indicatorRiskScore: null`.
+    """
+
+    searchedValue: str | None = None
+    matchedValue: str | None = None
+    id: int | None = None
+    entity: EnumDtoOutput | None = None
+    type: EnumDtoOutput | None = None
+    benign: bool | None = None
+    indicatorRiskScore: EnumDtoOutput | None = None
+    actor: list[AkaDtoOutput] | None = None
+    malware: list[AkaDtoOutput] | None = None
+    system: list[AkaDtoOutput] | None = None
+
+
+class BatchCheckSummary(ActionOutput):
+    total_values: int | None = None
+    total_results: int | None = None
+
+
+@app.action(
+    description="Check a batch of indicator values (type auto-detected) against the Analyst1 platform",
+    action_type="investigate",
+    render_as="table",
+    summary_type=BatchCheckSummary,
+)
+def batch_check(params: BatchCheckParams, soar: SOARClient, asset: Asset) -> list[BatchCheckResultOutput]:
+    """Batch check indicator values in Analyst1."""
+    logger.info("Running batch check")
+
+    values = [value.strip() for chunk in params.values.split("\n") for value in chunk.split(",")]
+    values = [value for value in values if value]
+    if not values:
+        raise ActionFailure("No values provided")
+
+    values_csv = ",".join(values)
+    if len(values_csv) > BATCH_CHECK_MAX_VALUES_LENGTH:
+        raise ActionFailure("Too many/long values for batch check (URL length limit); split the input")
+
+    client = Analyst1Client(asset, asset.auth_state)
+    try:
+        results = client.batch_check(values_csv)
+        soar.set_summary(BatchCheckSummary(total_values=len(values), total_results=len(results)))
+        return [BatchCheckResultOutput(**row) for row in results]
+    finally:
+        client.close()
 
 
 # =============================================================================
