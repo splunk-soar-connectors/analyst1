@@ -324,7 +324,8 @@ class Analyst1Client:
                 actor["link"] = f"{self.base_url}/actors/{actor['id']}"
 
         for enrichment_result in response.get("enrichmentResults") or []:
-            enrichment_result["name"] = ENRICHMENT_RESULTS_NAME_MAP.get(enrichment_result["type"], enrichment_result["type"])
+            enrichment_type = enrichment_result.get("type", "")
+            enrichment_result["name"] = ENRICHMENT_RESULTS_NAME_MAP.get(enrichment_type, enrichment_type)
 
         return response
 
@@ -821,6 +822,12 @@ def display_indicators_view(outputs: list[IndicatorOutput]) -> dict:
         # The template compares element.id > 0 for actors and malwares
         for element in (*record["actors"], *record["malwares"]):
             element.setdefault("id", 0)
+        # The template sorts these lists by attribute; Jinja's sort filter
+        # raises if an element lacks the key (exclude_none drops None keys)
+        for element in (*record["originatingIps"], *record["subjects"], *record["fileNames"]):
+            element.setdefault("name", "")
+        for element in record["ports"]:
+            element.setdefault("value", 0)
         results.append({"data": [record]})
 
     if not results:
@@ -892,12 +899,12 @@ def lookup_string(params: LookupStringParams, soar: SOARClient, asset: Asset) ->
 def lookup_ip(params: LookupIpParams, soar: SOARClient, asset: Asset) -> list[IpIndicatorOutput]:
     """Look up an IP address in Analyst1."""
     logger.info(f"Looking up IP: {params.ip}")
-    # Determine if IPv4 or IPv6
+    # Determine if IPv4 or IPv6 (classic parity: an invalid IP fails the action)
     try:
         ip_obj = ipaddress.ip_address(params.ip)
-        indicator_type = "ip" if ip_obj.version == 4 else "ipv6"
-    except ValueError:
-        indicator_type = "ip"
+    except ValueError as e:
+        raise ActionFailure(str(e)) from e
+    indicator_type = "ip" if ip_obj.version == 4 else "ipv6"
     return _do_indicator_lookup(soar, asset, params.ip, indicator_type, IpIndicatorOutput)
 
 
