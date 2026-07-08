@@ -390,7 +390,7 @@ class ClassifiedName(ActionOutput):
 
 
 class ClassifiedIdName(ActionOutput):
-    """An id/name pair with a classification (attackPatterns, targets, malwares)."""
+    """An id/name pair with a classification (attackPatterns, targets, malwares, exploitStage)."""
 
     classification: str | None = None
     id: int | None = None
@@ -414,15 +414,20 @@ class ConfidenceLevelOutput(ActionOutput):
 
 
 class EnrichmentFieldOutput(ActionOutput):
-    """Enrichment field; `nunmeric` reproduces the classic manifest's field name verbatim."""
+    """Enrichment field (OpenAPI 2.15.0 EnrichmentFieldResource).
+
+    The classic manifest declared this field as `nunmeric` -- a typo the API
+    never sends (spec key: `numeric`), so classic's datapath could never be
+    populated; the spec-correct name is used here.
+    """
 
     type: str | None = None
     value: str | None = None
     name: str | None = None
-    nunmeric: str | None = None
+    numeric: str | None = None
     classification: str | None = None
 
-    @field_validator("value", "nunmeric", mode="before")
+    @field_validator("value", "numeric", mode="before")
     @classmethod
     def _coerce_str(cls, value: Any) -> str | None:
         return _lenient_str(value)
@@ -443,6 +448,13 @@ class EnrichmentResultOutput(ActionOutput):
 
 
 class FileSizeOutput(ActionOutput):
+    """The file size object ({value, classification}; live 1_1 evidence, indicator 2690).
+
+    The classic manifest declared fileSize as a list (fileSize.*.value), but the
+    API returns a single object and classic's own template dereferences
+    record.fileSize.value -- a ratified shape correction.
+    """
+
     value: int | None = None
     classification: str | None = None
 
@@ -463,6 +475,85 @@ class PortOutput(ActionOutput):
     classification: str | None = None
 
 
+class DateRangeOutput(ActionOutput):
+    """A classified date range (activityRange, reportedRange, verifiedDateRange; 1_1 API)."""
+
+    classification: str | None = None
+    startDate: str | None = None
+    endDate: str | None = None
+
+
+class SourceOutput(ActionOutput):
+    """An intelligence source reference (sources.*; 1_1 API).
+
+    `url` is feed metadata (frequently empty), intentionally NOT a cef url.
+    """
+
+    id: int | None = None
+    type: str | None = None
+    title: str | None = None
+    url: str | None = None
+    category: str | None = None
+    enabled: bool | None = None
+
+
+class TagOutput(ActionOutput):
+    """A tag reference (tags.*; 1_1 API payloads carry no classification here)."""
+
+    id: int | None = None
+    name: str | None = None
+
+
+class StixObjectOutput(ActionOutput):
+    """A STIX object association (stixObjects.*; OpenAPI 2.15.0 StixObjectAssociation)."""
+
+    id: str | None = None  # STIX identifier (string, not int)
+    reportingSourceId: int | None = None
+    type: str | None = None  # STIX object type enum (kept as free str)
+
+
+class VerificationOutput(ActionOutput):
+    """A verification record (verifications.*; OpenAPI 2.15.0 VerificationRecord)."""
+
+    verifier: str | None = None
+    verifierOrg: str | None = None
+    verificationDate: str | None = None
+    evidenceId: int | None = None
+    evidenceTitle: str | None = None
+
+
+class HitStatDimensionValueOutput(ActionOutput):
+    """A hit-stat dimension value (hitStatDetails.*.dimensions.*.dimensionValues.*)."""
+
+    id: int | None = None
+    label: str | None = None
+    firstHit: str | None = None
+    lastHit: str | None = None
+    totalHits: int | None = None
+
+
+class HitStatDimensionOutput(ActionOutput):
+    """A hit-stat dimension (hitStatDetails.*.dimensions.*)."""
+
+    label: str | None = None
+    dimension: int | None = None
+    firstHit: str | None = None
+    lastHit: str | None = None
+    totalHits: int | None = None
+    dimensionValues: list[HitStatDimensionValueOutput] | None = None
+
+
+class HitStatDetailOutput(ActionOutput):
+    """A per-source hit-stat detail (hitStatDetails.*; live 1_1 evidence, indicator 14131)."""
+
+    label: str | None = None
+    external: bool | None = None
+    firstHit: str | None = None
+    lastHit: str | None = None
+    totalHits: int | None = None
+    dimensions: list[HitStatDimensionOutput] | None = None
+
+
 class IndicatorValueOutput(ActionOutput):
     """The indicator value itself; per-action subclasses add the CEF type on `name`."""
 
@@ -473,14 +564,29 @@ class IndicatorValueOutput(ActionOutput):
 class IndicatorOutput(ActionOutput):
     """Output model for the nine indicator lookup actions (classic 76-datapath contract).
 
-    Shape corrections vs the classic manifest (which declared these as flat
-    strings, contradicting the API payloads the classic view rendered):
-    `exploitStage`, `path` are objects and `originatingIps` is a list of
-    objects; `hitCount` is numeric. `base_url`, `actors.*.link` and
-    `enrichmentResults.*.name` are classic runtime decorations that classic
-    emitted without declaring; the SDK declares everything it emits.
-    `campaigns` and `indicatorRiskScore` are real API fields the classic view
-    rendered/received but never declared.
+    Shape corrections vs the classic manifest (which declared these
+    incorrectly, contradicting the API payloads and the OpenAPI 2.15.0 spec):
+    `exploitStage` (with an `id`; live 1_1 evidence, indicator 2690), `path`,
+    `fileSize` and `domainRegistration` (spec: NameClassificationPair) are
+    objects (classic's own template dereferences record.fileSize.value) and
+    `originatingIps` is a list of objects; `hitCount` is numeric. `base_url`,
+    `actors.*.link` and `enrichmentResults.*.name` are classic runtime
+    decorations that classic emitted without declaring; the SDK declares
+    everything it emits. `campaigns` and `indicatorRiskScore` are real API
+    fields the classic view rendered/received but never declared.
+
+    1_1 (OAuth) API serialization support (a1soar-30c decision memo + OpenAPI
+    2.15.0 amendment): `links` is normalized from the 1_1 object form to the
+    classic 1_0 list-of-{rel, href} shape (see _normalize_links), the
+    fixture-proven 1_1-only fields are modeled (activityRange, reportedRange,
+    verifiedDateRange, sources, tags, externalhitCount, firstExternalHit,
+    lastExternalHit, expand), the spec-defined fields are modeled
+    (indicatorDerivation, integrationSources, stixObjects, verifications),
+    and the live-evidenced nested hitStatDetails is modeled (indicator
+    14131) -- all optional, absent under 1_0. `externalhitCount`
+    deliberately matches the API's lowercase-h spelling. Every 1_1 payload
+    key is now emitted; the only remaining runtime delta versus classic is
+    `enrichmentResults.*.result` staying a JSON string.
     """
 
     active: bool | None = None
@@ -490,12 +596,12 @@ class IndicatorOutput(ActionOutput):
     benign: BenignOutput | None = None
     confidenceLevel: ConfidenceLevelOutput | None = None
     description: ClassifiedName | None = None
-    domainRegistration: str | None = None
+    domainRegistration: ClassifiedName | None = None
     enrichmentFields: list[EnrichmentFieldOutput] | None = None
     enrichmentResults: list[EnrichmentResultOutput] | None = None
-    exploitStage: ClassifiedName | None = None
+    exploitStage: ClassifiedIdName | None = None
     fileNames: list[ClassifiedName] | None = None
-    fileSize: list[FileSizeOutput] | None = None
+    fileSize: FileSizeOutput | None = None
     firstHit: str | None = None
     hashes: list[HashOutput] | None = None
     hitCount: int | None = None
@@ -527,19 +633,37 @@ class IndicatorOutput(ActionOutput):
     base_url: str | None = None
     campaigns: list[ClassifiedIdName] | None = None
     indicatorRiskScore: ClassifiedName | None = None
+    # 1_1 (OAuth) API serialization fields (a1soar-30c); absent under 1_0.
+    activityRange: DateRangeOutput | None = None
+    reportedRange: DateRangeOutput | None = None
+    verifiedDateRange: DateRangeOutput | None = None
+    sources: list[SourceOutput] | None = None
+    tags: list[TagOutput] | None = None
+    externalhitCount: int | None = None  # literal API key spelling (lowercase h)
+    firstExternalHit: str | None = None
+    lastExternalHit: str | None = None
+    expand: str | None = None
+    # OpenAPI 2.15.0 spec-defined fields (a1soar-30c amendment).
+    indicatorDerivation: str | None = None
+    integrationSources: list[str] | None = None
+    stixObjects: list[StixObjectOutput] | None = None
+    verifications: list[VerificationOutput] | None = None
+    # Live-evidenced nested hit stats (a1soar-30c; indicator 14131).
+    hitStatDetails: list[HitStatDetailOutput] | None = None
 
-    @field_validator("domainRegistration", mode="before")
+    @field_validator("links", mode="before")
     @classmethod
-    def _coerce_str(cls, value: Any) -> str | None:
-        return _lenient_str(value)
-
-    @field_validator("fileSize", mode="before")
-    @classmethod
-    def _wrap_file_size(cls, value: Any) -> Any:
-        # Classic manifest declares fileSize as a list (fileSize.*.value);
-        # tolerate a single object by wrapping it.
+    def _normalize_links(cls, value: Any) -> Any:
+        # The 1_1 (OAuth) API serializes links as an object
+        # ({"self": {"href": ...}, "evidence": {...}, ...}); the 1_0 API and
+        # the classic manifest contract use a list of {rel, href}. Coerce the
+        # object form to the list form, preserving insertion order, so
+        # playbooks see an identical links.* list under both auth modes.
+        # hrefs are emitted verbatim (no XSOAR-style URL rewriting). Anything
+        # else passes through to normal validation (lenient posture; never
+        # raise here).
         if isinstance(value, dict):
-            return [value]
+            return [{"rel": rel, "href": item.get("href") if isinstance(item, dict) else None} for rel, item in value.items()]
         return value
 
 
@@ -774,7 +898,6 @@ _TEMPLATE_LIST_FIELDS = (
     "enrichmentFields",
     "enrichmentResults",
     "fileNames",
-    "fileSize",
     "hashes",
     "malwares",
     "originatingIps",
@@ -789,6 +912,7 @@ _TEMPLATE_OBJECT_FIELDS = (
     "confidenceLevel",
     "description",
     "exploitStage",
+    "fileSize",  # object ({value, classification}); template renders record.fileSize.value
     "ipResolution",
     "path",
     "value",
