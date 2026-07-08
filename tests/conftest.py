@@ -75,8 +75,18 @@ NOTFOUND_VALUES = {
 NOTFOUND_BODY = {"message": "The requested resource was not found."}
 
 # Value that /indicator/match answers with a 500 and a non-JSON (HTML) body.
+# The body replicates the live 401 Tomcat error page shape (generic Tomcat
+# markup, no secrets) that the Analyst1 auth tier answers bad basic-auth
+# credentials with.
 HTML_ERROR_VALUE = "html-error.example.com"
-HTML_ERROR_BODY = "<html><body><h1>Internal Server Error</h1></body></html>"
+HTML_ERROR_BODY = (
+    '<!doctype html><html lang="en"><head><title>HTTP Status 401 – Unauthorized</title>'
+    '<style type="text/css">body {font-family:Tahoma,Arial,sans-serif;}</style></head>'
+    "<body><h1>HTTP Status 401 – Unauthorized</h1></body></html>"
+)
+# What _readable_error_body extracts from HTML_ERROR_BODY: html.parser's .text
+# excludes <style>/<script> content, and title+h1 concatenate on one line.
+HTML_ERROR_READABLE_TEXT = "HTTP Status 401 – UnauthorizedHTTP Status 401 – Unauthorized"
 
 # Evidence uploadStatus uuid that answers 404 (upload key not found).
 MISSING_STATUS_UUID = "missing-uuid"

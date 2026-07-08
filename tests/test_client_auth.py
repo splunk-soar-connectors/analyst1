@@ -24,7 +24,8 @@ from tests.conftest import (
     BASE_URL,
     BASIC_PASSWORD,
     BASIC_USERNAME,
-    HTML_ERROR_BODY,
+    BY_ID_ERROR_ID,
+    HTML_ERROR_READABLE_TEXT,
     HTML_ERROR_VALUE,
     OAUTH_CLIENT_ID,
     basic_asset,
@@ -124,12 +125,10 @@ class TestOAuthTokenLifecycle:
 
 
 class TestErrorHandling:
-    # The two HTML-error tests assert CURRENT SDK behavior: a non-JSON error
-    # body is surfaced verbatim in the Analyst1APIError message. Classic 1.2.1
-    # instead parsed HTML error bodies via BeautifulSoup
-    # (_process_html_response); that unratified delta is tracked as a1soar-tri.
-    # If that bead restores the parse, update these tests.
-    def test_html_error_body_raises_api_error(self, api):
+    # HTML error bodies are reduced to their readable text (classic 1.2.1's
+    # _process_html_response parity, restored per a1soar-tri) before landing
+    # in the Analyst1APIError message; non-HTML bodies pass through verbatim.
+    def test_html_error_body_raises_api_error_with_readable_text(self, api):
         client = _make_basic_client()
         try:
             with pytest.raises(analyst1_app.Analyst1APIError) as exc_info:
@@ -139,15 +138,49 @@ class TestErrorHandling:
 
         message = str(exc_info.value)
         assert "API error. Status: 500" in message
-        assert HTML_ERROR_BODY in message  # raw body text is surfaced verbatim
+        assert HTML_ERROR_READABLE_TEXT in message  # readable text extracted from the HTML body
+        assert "<html" not in message  # no raw markup in the message
+        assert "<style" not in message
+        assert "font-family" not in message
 
     def test_html_error_body_fails_action_cleanly(self, api, run_action):
         result = run_action("lookup_domain", {"domain": HTML_ERROR_VALUE}, asset=basic_asset())
 
         assert result["status"] is False
         assert "API error. Status: 500" in result["message"]
-        assert "Internal Server Error" in result["message"]
+        assert HTML_ERROR_READABLE_TEXT in result["message"]
+        assert "<html" not in result["message"]
         assert result["data"] == []
+
+    def test_non_html_error_body_passes_through_verbatim(self, api):
+        client = _make_basic_client()
+        try:
+            with pytest.raises(analyst1_app.Analyst1APIError) as exc_info:
+                client.get(f"/actor/{BY_ID_ERROR_ID}")  # mock answers 500 with a JSON body
+        finally:
+            client.close()
+
+        message = str(exc_info.value)
+        assert "API error. Status: 500" in message
+        # The raw JSON body is embedded verbatim (markup intact, no extraction).
+        assert '"message"' in message
+        assert "Internal server error" in message
+
+    def test_html_error_body_parse_failure_falls_back(self, api, monkeypatch):
+        def _boom(*args, **kwargs):
+            raise ValueError("parse failure")
+
+        monkeypatch.setattr(analyst1_app, "BeautifulSoup", _boom)
+        client = _make_basic_client()
+        try:
+            with pytest.raises(analyst1_app.Analyst1APIError) as exc_info:
+                client.indicator_match(HTML_ERROR_VALUE, "domain")
+        finally:
+            client.close()
+
+        message = str(exc_info.value)
+        assert "API error. Status: 500" in message
+        assert "Cannot parse error details" in message
 
     def test_match_404_returns_none_from_client(self, api):
         client = _make_basic_client()

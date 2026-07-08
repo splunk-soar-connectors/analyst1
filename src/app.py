@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
+from bs4 import BeautifulSoup
 from pydantic import field_validator
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, OutputField, PermissiveActionOutput
@@ -139,6 +140,27 @@ class Asset(BaseAsset):
         sensitive=True,
         description="Analyst1 Password (Basic authentication for REST-enabled account)",
     )
+
+
+def _readable_error_body(response: httpx.Response) -> str:
+    """Return an error-response body suitable for embedding in an error message.
+
+    HTML bodies (e.g. the Tomcat error page the API's auth tier answers a 401
+    with, or a proxy error page) are reduced to their readable text via
+    BeautifulSoup, replicating classic 1.2.1's _process_html_response. Classic
+    also brace-escaped the text ({ -> {{) to guard classic Phantom's format
+    pipeline; that is intentionally dropped -- SDK/SOAR 8.5 renders
+    brace-laden messages fine (verified live). Non-HTML bodies (including the
+    API's RFC-7807 XML 400s, same as classic) pass through verbatim.
+    """
+    if "html" not in response.headers.get("Content-Type", "").lower():
+        return response.text
+    try:
+        soup = BeautifulSoup(response.text, "html.parser")
+        lines = [line.strip() for line in soup.text.split("\n") if line.strip()]
+        return "\n".join(lines)
+    except Exception:
+        return "Cannot parse error details"
 
 
 # =============================================================================
@@ -302,7 +324,7 @@ class Analyst1Client:
         if response.status_code >= 400:
             error_msg = f"API error. Status: {response.status_code}"
             try:
-                error_msg += f", Response: {response.text}"
+                error_msg += f", Response: {_readable_error_body(response)}"
             except Exception:
                 pass
             raise Analyst1APIError(error_msg, status=response.status_code)
@@ -422,7 +444,9 @@ class Analyst1Client:
         if response.status_code == 404:
             return ""
         if response.status_code >= 400:
-            raise Analyst1APIError(f"API error. Status: {response.status_code}, Response: {response.text}", status=response.status_code)
+            raise Analyst1APIError(
+                f"API error. Status: {response.status_code}, Response: {_readable_error_body(response)}", status=response.status_code
+            )
         return response.text
 
     def get_sensor_diff(self, sensor_id: int, version: int) -> dict[str, Any]:
