@@ -91,6 +91,10 @@ HTML_ERROR_READABLE_TEXT = "HTTP Status 401 – UnauthorizedHTTP Status 401 – 
 # Evidence uploadStatus uuid that answers 404 (upload key not found).
 MISSING_STATUS_UUID = "missing-uuid"
 
+# Evidence uploadStatus uuid that answers 204 (failed ingest, no evidence
+# record available -- per the OpenAPI spec's 204 response description).
+FAILED_INGEST_UUID = "failed-ingest-uuid"
+
 # batchCheck: this value alone answers an empty {"results": []} envelope; the
 # error value (anywhere in the csv) answers a 500.
 BATCH_NOMATCH_VALUE = "nomatch.example.com"
@@ -222,6 +226,8 @@ class MockAnalyst1API:
         if "/evidence/uploadStatus/" in request.url.path:
             if request.url.path.endswith(f"/{MISSING_STATUS_UUID}"):
                 return httpx.Response(404, json=NOTFOUND_BODY)
+            if request.url.path.endswith(f"/{FAILED_INGEST_UUID}"):
+                return httpx.Response(204)
             return httpx.Response(200, json=self.evidence_status)
         if request.url.path.endswith("/evidence"):
             if request.method == "POST":

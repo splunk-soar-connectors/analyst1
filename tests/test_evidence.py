@@ -15,7 +15,7 @@
 
 import pytest
 
-from tests.conftest import MISSING_STATUS_UUID
+from tests.conftest import FAILED_INGEST_UUID, MISSING_STATUS_UUID
 
 
 UPLOAD_PARAMS = {
@@ -88,6 +88,26 @@ class TestCheckEvidenceStatus:
         assert result["status"] is True
         assert result["data"] == [{"message": "The requested resource was not found.", "id": None}]
         assert result["summary"] == {"message": "The requested resource was not found.", "evidence_id": None}
+
+    def test_still_processing_returns_null_id(self, api, run_action):
+        # Per the OpenAPI spec, a 200 with a null id means ingest is still processing.
+        api.evidence_status = {"id": None, "message": None}
+
+        result = run_action("check_evidence_status", {"uuid": "abc-123-uuid"})
+
+        assert result["status"] is True
+        assert result["data"] == [{"message": None, "id": None}]
+        assert result["summary"] == {"message": None, "evidence_id": None}
+
+    def test_failed_ingest_204_reports_processing_failure(self, api, run_action):
+        # Per the OpenAPI spec's 204 response description: "An error occurred
+        # processing the Evidence. No Evidence record available." (spec-only;
+        # never observed live). Must be distinguishable from still-processing.
+        result = run_action("check_evidence_status", {"uuid": FAILED_INGEST_UUID})
+
+        assert result["status"] is True
+        assert result["data"] == [{"message": "Evidence processing failed (no evidence record available)", "id": None}]
+        assert result["summary"] == {"message": "Evidence processing failed (no evidence record available)", "evidence_id": None}
 
 
 class TestGetEvidence:

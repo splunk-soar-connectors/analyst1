@@ -473,6 +473,52 @@ class Analyst1Client:
             return results if isinstance(results, list) else []
         return resp if isinstance(resp, list) else []
 
+    def get_evidence_upload_status(self, uuid: str) -> tuple[int, dict[str, Any]]:
+        """Fetch an evidence upload's status; returns (status_code, body).
+
+        check_evidence_status needs the HTTP status to distinguish a 204 (per
+        the OpenAPI spec: "An error occurred processing the Evidence. No
+        Evidence record available.") from a 200 with a null id (ingest still
+        processing) -- both have empty/id-less bodies, so this bypasses
+        _make_request, which collapses them to {} (one-shot; no 401-retry,
+        same as get_sensor_config_text). A 404 body is parsed and returned
+        like _make_request does; other >=400 statuses raise.
+        """
+        url = f"{self.base_url}/api/{self._api_version}/evidence/uploadStatus/{uuid}"
+        auth_kwargs = self._get_auth()
+        kwargs: dict[str, Any] = {}
+        if "headers" in auth_kwargs:
+            kwargs["headers"] = auth_kwargs["headers"]
+        if "auth" in auth_kwargs:
+            kwargs["auth"] = auth_kwargs["auth"]
+
+        try:
+            response = self._client.request("GET", url, **kwargs)
+        except Exception as e:
+            raise Analyst1APIError(f"Error connecting to server: {e!s}") from e
+
+        if response.status_code == 404:
+            try:
+                return response.status_code, response.json()
+            except Exception:
+                return response.status_code, {}
+
+        if response.status_code >= 400:
+            error_msg = f"API error. Status: {response.status_code}"
+            try:
+                error_msg += f", Response: {_readable_error_body(response)}"
+            except Exception:
+                pass
+            raise Analyst1APIError(error_msg, status=response.status_code)
+
+        if not response.text:
+            return response.status_code, {}
+
+        try:
+            return response.status_code, response.json()
+        except Exception as e:
+            raise Analyst1APIError(f"Unable to parse JSON response: {e!s}") from e
+
 
 # =============================================================================
 # App Definition
@@ -1735,7 +1781,17 @@ def check_evidence_status(params: CheckEvidenceStatusParams, soar: SOARClient, a
 
     client = Analyst1Client(asset, asset.auth_state)
     try:
-        response = client.get(f"/evidence/uploadStatus/{params.uuid}")
+        status_code, response = client.get_evidence_upload_status(params.uuid)
+        if status_code == 204:
+            # Per the OpenAPI spec's 204 response description for this
+            # endpoint: "An error occurred processing the Evidence. No
+            # Evidence record available." Spec-only -- never observed live;
+            # confirmation requested from Analyst1 engineering. Reported like
+            # the 404 "Process not found." passthrough: the action succeeds
+            # and the message carries the status-check finding.
+            message = "Evidence processing failed (no evidence record available)"
+            soar.set_summary(CheckEvidenceStatusSummary(message=message, evidence_id=None))
+            return CheckEvidenceStatusOutput(message=message, id=None)
         message = _safe_str(response.get("message"))
         evidence_id = _safe_int(response.get("id"))
         soar.set_summary(CheckEvidenceStatusSummary(message=message, evidence_id=evidence_id))
