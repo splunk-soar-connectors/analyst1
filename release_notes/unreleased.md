@@ -1,5 +1,5 @@
 **Unreleased**
-* Convert app to the Splunk SOAR SDK (splunk-soar-sdk 3.25.3); version 2.0.0 replaces the classic Analyst1 app (v1.2.1) under the same appid
+* Convert app to the Splunk SOAR SDK (splunk-soar-sdk 3.25.3); version 1.3.0 replaces the classic Analyst1 app (v1.2.1) under the same appid and requires Splunk SOAR 7.0 or later
 * Add batch check action: check a batch of indicator values (type auto-detected by the API) against the Analyst1 platform
 * Add get indicator by id, get actor by id, and get malware by id actions to fetch Analyst1 resources by their numeric ID
 * Add sensor actions: get sensors, get sensor taskings, get sensor config (stores the configuration file in the vault), and get sensor diff

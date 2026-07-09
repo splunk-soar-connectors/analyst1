@@ -56,7 +56,7 @@ class TestUploadEvidenceFile:
             assert api_value in body
         # Contributor fields were never exposed as action params (classic parity:
         # its field map defined them but analyst1.json never offered them, so
-        # nothing was ever sent); the dead map entries were removed in 2.0.0.
+        # nothing was ever sent); the dead map entries were removed in 1.3.0.
         assert b"contibutorConsent" not in body
         assert b"contributorConsent" not in body
         assert b"contributorOrg" not in body
