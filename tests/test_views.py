@@ -37,7 +37,9 @@ class TestViewContext:
 
         assert context["title1"] == "Analyst1 Indicator Lookup"
         assert context["title2"] == "Threat Intelligence"
-        assert context["title_logo"] == "logo_analyst1.svg"
+        # title_logo must NOT be set: the platform supplies themed app_resource
+        # logo paths in the view context and a handler value overrides them.
+        assert "title_logo" not in context
         (result,) = context["results"]
         (record,) = result["data"]
         assert record["id"] == 90000948
@@ -99,7 +101,10 @@ class TestViewTemplateRendering:
         )
 
         assert isinstance(html, str)
-        assert "Analyst1 Indicator Lookup" in html
+        # No title-text assertion: templates render no title/subtitle blocks
+        # (the platform paints the centered app logo in the same title bar;
+        # text there would overlap it).
+        assert "Intelligence Overview" in html
         assert "test.com" in html
         assert "Failed to render" not in html
         assert "Error in view function" not in html

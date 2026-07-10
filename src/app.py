@@ -1253,11 +1253,13 @@ def display_indicators_view(outputs: list[IndicatorOutput]) -> dict:
         # Not-found runs emit no data records; render the "No matches found" row
         results.append({"data": []})
 
+    # title_logo/dark_title_logo deliberately NOT set: the platform supplies
+    # correct app_resource paths for both themes in the view context, and any
+    # value returned here overrides them (a bare filename 404s).
     return {
         "results": results,
         "title1": "Analyst1 Indicator Lookup",
         "title2": "Threat Intelligence",
-        "title_logo": "logo_analyst1.svg",
     }
 
 
@@ -1415,6 +1417,7 @@ class BatchCheckResultOutput(ActionOutput):
     actor: list[AkaDtoOutput] | None = None
     malware: list[AkaDtoOutput] | None = None
     system: list[AkaDtoOutput] | None = None
+    base_url: str | None = None  # asset server, injected at action time for view links
 
 
 class BatchCheckSummary(ActionOutput):
@@ -1422,10 +1425,47 @@ class BatchCheckSummary(ActionOutput):
     total_results: int | None = None
 
 
+def _enum_title(enum: Any) -> str:
+    """Display text for an EnumDto ({key, title}) value."""
+    if enum is None:
+        return ""
+    return enum.title or enum.key or ""
+
+
+def _aka_titles(entities: list[Any] | None) -> list[str]:
+    """Titles from an AkaDto list (batchCheck actor/malware/system)."""
+    return [e.title for e in entities or [] if e.title]
+
+
+@app.view_handler(template="display_batch_results.html")
+def display_batch_results_view(outputs: list[BatchCheckResultOutput]) -> dict:
+    """Table view for batch check: one row per result."""
+    rows = []
+    for output in outputs:
+        rows.append(
+            {
+                "searched": output.searchedValue or "",
+                "matched": output.matchedValue or "",
+                "id": output.id,
+                "url": f"{output.base_url}/indicators/{output.id}" if output.base_url and output.id else "",
+                "type": _enum_title(output.type),
+                "risk": _enum_title(output.indicatorRiskScore),
+                "benign": output.benign,
+                "actors": _aka_titles(output.actor),
+                "malware": _aka_titles(output.malware),
+            }
+        )
+    return {
+        "rows": rows,
+        "title1": "Analyst1 Batch Check",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Check a batch of indicator values (type auto-detected) against the Analyst1 platform",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_batch_results_view,
     summary_type=BatchCheckSummary,
 )
 def batch_check(params: BatchCheckParams, soar: SOARClient, asset: Asset) -> list[BatchCheckResultOutput]:
@@ -1445,6 +1485,8 @@ def batch_check(params: BatchCheckParams, soar: SOARClient, asset: Asset) -> lis
     try:
         results = client.batch_check(values_csv)
         soar.set_summary(BatchCheckSummary(total_values=len(values), total_results=len(results)))
+        for row in results:
+            row["base_url"] = client.base_url
         return [BatchCheckResultOutput(**row) for row in results]
     finally:
         client.close()
@@ -1529,10 +1571,84 @@ class ActorResourceOutput(ActionOutput):
         return _links_to_list(value)
 
 
+def _a1_ui_base(links: list[Any] | None) -> str:
+    """Analyst1 UI base URL derived from an API self link (…/api/… -> host).
+
+    Only http(s) bases are accepted: the href is API-sourced and feeds an
+    <a href> in the view, so other schemes (javascript:, data:) are dropped.
+    """
+    for link in links or []:
+        href = getattr(link, "href", None)
+        if href and "/api/" in href:
+            base = href.split("/api/")[0]
+            if base.startswith(("http://", "https://")):
+                return base
+    return ""
+
+
+def _classified_name(value: Any) -> str:
+    """Name from a ClassifiedName/ClassifiedIdName value, or empty string."""
+    return (value.name if value else None) or ""
+
+
+def _classified_names(values: list[Any] | None) -> list[str]:
+    """Names from a ClassifiedIdName list, empty entries dropped."""
+    return [v.name for v in values or [] if v.name]
+
+
+def _date_range(value: Any) -> str:
+    """Display text for a DateRangeOutput, or empty string."""
+    if value is None or not (value.startDate or value.endDate):
+        return ""
+    return f"{value.startDate or '?'} – {value.endDate or '?'}"
+
+
+@app.view_handler(template="display_actor.html")
+def display_actor_view(outputs: list[ActorResourceOutput]) -> dict:
+    """Entity detail view for a threat actor."""
+    records = []
+    for output in outputs:
+        if not output.id:
+            continue
+        base = _a1_ui_base(output.links)
+        records.append(
+            {
+                "id": output.id,
+                "url": f"{base}/actors/{output.id}" if base else "",
+                "title": _classified_name(output.title) or f"Actor {output.id}",
+                "akas": sorted({name for name in _classified_names(output.akas)}),
+                "country": _classified_name(output.country),
+                "sponsor": _classified_name(output.sponsor),
+                "primary_motivation": _classified_name(output.primaryMotivation),
+                "secondary_motivations": _classified_names(output.secondaryMotivations),
+                "personal_motivations": _classified_names(output.personalMotivations),
+                "activity_range": _date_range(output.activityRange),
+                "attack_patterns": _classified_names(output.attackPatterns),
+                "targets": _classified_names(output.targets),
+                "campaigns": _classified_names(output.campaigns),
+                "cves": _classified_names(output.cves),
+                "malware": [
+                    {
+                        "name": m.name,
+                        "url": f"{base}/malware/{m.id}" if base and m.id else "",
+                    }
+                    for m in output.malware or []
+                    if m.name
+                ],
+                "description": _classified_name(output.description),
+            }
+        )
+    return {
+        "records": records,
+        "title1": "Analyst1 Threat Actor",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Fetch an actor from the Analyst1 platform by its Analyst1 ID",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_actor_view,
     summary_type=ByIdSummary,
 )
 def get_actor_by_id(params: GetActorByIdParams, soar: SOARClient, asset: Asset) -> list[ActorResourceOutput]:
@@ -1579,10 +1695,37 @@ class MalwareResourceOutput(ActionOutput):
         return _links_to_list(value)
 
 
+@app.view_handler(template="display_malware.html")
+def display_malware_view(outputs: list[MalwareResourceOutput]) -> dict:
+    """Entity detail view for a malware family."""
+    records = []
+    for output in outputs:
+        if not output.id:
+            continue
+        base = _a1_ui_base(output.links)
+        records.append(
+            {
+                "id": output.id,
+                "url": f"{base}/malware/{output.id}" if base else "",
+                "title": _classified_name(output.title) or f"Malware {output.id}",
+                "akas": sorted({name for name in _classified_names(output.akas)}),
+                "category": _classified_name(output.category),
+                "stage": _classified_name(output.stage),
+                "stix_objects": [f"{s.type or 'object'}: {s.id}" for s in output.stixObjects or [] if s.id],
+                "description": _classified_name(output.description),
+            }
+        )
+    return {
+        "records": records,
+        "title1": "Analyst1 Malware Family",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Fetch a malware family from the Analyst1 platform by its Analyst1 ID",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_malware_view,
     summary_type=ByIdSummary,
 )
 def get_malware_by_id(params: GetMalwareByIdParams, soar: SOARClient, asset: Asset) -> list[MalwareResourceOutput]:
@@ -1700,11 +1843,22 @@ class UploadEvidenceFileSummary(ActionOutput):
     uuid: str | None = OutputField(cef_types=["analyst1 evidence upload key"])
 
 
+@app.view_handler(template="display_evidence_upload.html")
+def display_evidence_upload_view(outputs: list[UploadEvidenceFileOutput]) -> dict:
+    """Submission receipt for an evidence file upload."""
+    uuids = [output.uuid for output in outputs if output.uuid]
+    return {
+        "uuids": uuids,
+        "title1": "Analyst1 Evidence Upload",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Upload file from vault to Analyst1 as evidence file",
     action_type="generic",
     read_only=False,
-    render_as="table",
+    view_handler=display_evidence_upload_view,
     summary_type=UploadEvidenceFileSummary,
 )
 def upload_evidence_file(params: UploadEvidenceFileParams, soar: SOARClient, asset: Asset) -> UploadEvidenceFileOutput:
@@ -1777,10 +1931,36 @@ class CheckEvidenceStatusSummaryDatapaths(CheckEvidenceStatusSummary):
     id: int | None = OutputField(cef_types=["analyst1 evidence id"])
 
 
+@app.view_handler(template="display_evidence_status.html")
+def display_evidence_status_view(outputs: list[CheckEvidenceStatusOutput]) -> dict:
+    """Status view for an evidence ingest: ingested / failed / processing at a glance."""
+    records = []
+    for output in outputs:
+        if output.id:
+            state, kind = "Ingested", "good"
+        elif output.message and "fail" in output.message.lower():
+            state, kind = "Failed", "bad"
+        else:
+            state, kind = "Processing", "warn"
+        records.append(
+            {
+                "state": state,
+                "kind": kind,
+                "message": output.message or "",
+                "id": output.id,
+            }
+        )
+    return {
+        "records": records,
+        "title1": "Analyst1 Evidence Status",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Check the status of an evidence file upload",
     action_type="generic",
-    render_as="table",
+    view_handler=display_evidence_status_view,
     summary_type=CheckEvidenceStatusSummaryDatapaths,
 )
 def check_evidence_status(params: CheckEvidenceStatusParams, soar: SOARClient, asset: Asset) -> CheckEvidenceStatusOutput:
@@ -1943,10 +2123,48 @@ class GetEvidenceMultiPageLimitedSummary(GetEvidenceMultiPageSummary):
     note: str | None = None
 
 
+def _classified_value(value: Any, key: str = "name") -> str:
+    """Unwrap live classified objects ({name/date, classification}) or pass strings through.
+
+    Evidence rows carry these as plain strings in some captures and as
+    classified objects live; both must display as the bare value.
+    """
+    if isinstance(value, dict):
+        return value.get(key) or ""
+    return value or ""
+
+
+@app.view_handler(template="display_evidence_list.html")
+def display_evidence_list_view(outputs: list[EvidenceItemOutput]) -> dict:
+    """Table view for evidence search results: one row per evidence record."""
+    rows = []
+    for output in outputs:
+        record = output.model_dump()
+        base = record.get("base_url") or ""
+        record_id = record.get("id")
+        rows.append(
+            {
+                "id": record_id,
+                # evidence detail pages live under /files/{id} in the Analyst1 UI
+                "url": f"{base}/files/{record_id}" if base and record_id else "",
+                "title": _classified_value(record.get("title")) or record.get("fileName") or "",
+                "type": record.get("type") or "",
+                "tlp": record.get("tlp") or "",
+                "reported": _classified_value(record.get("reportedDate"), key="date"),
+                "analyzed": _classified_value(record.get("analyzedDate"), key="date"),
+            }
+        )
+    return {
+        "rows": rows,
+        "title1": "Analyst1 Evidence Search",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Browse and fetch evidence resources.",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_evidence_list_view,
 )
 def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> list[EvidenceItemOutput]:
     """Get evidence resources with pagination support."""
@@ -2054,6 +2272,8 @@ def get_evidence(params: GetEvidenceParams, soar: SOARClient, asset: Asset) -> l
             )
 
         logger.info(f"Total evidence retrieved: {len(all_evidence)}")
+        for evidence in all_evidence:
+            evidence["base_url"] = client.base_url
         return [EvidenceItemOutput(**evidence) for evidence in all_evidence]
     finally:
         client.close()
@@ -2140,10 +2360,35 @@ class GetSensorsSummary(ActionOutput):
     total_pages: int | None = None
 
 
+@app.view_handler(template="display_sensors.html")
+def display_sensors_view(outputs: list[SensorOutput]) -> dict:
+    """Table view for sensors: one row per sensor."""
+    rows = []
+    for output in outputs:
+        base = _a1_ui_base(output.links)
+        rows.append(
+            {
+                "id": output.id,
+                "url": f"{base}/sensors/{output.id}" if base and output.id else "",
+                "name": output.name or "",
+                "type": output.type or "",
+                "location": output.logicalLocation or "",
+                "org": output.org.name if output.org else "",
+                "current_version": output.currentVersionNumber,
+                "latest_config_version": output.latestConfigVersionNumber,
+            }
+        )
+    return {
+        "rows": rows,
+        "title1": "Analyst1 Sensors",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Browse and fetch sensors from the Analyst1 platform",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_sensors_view,
     summary_type=GetSensorsSummary,
 )
 def get_sensors(params: GetSensorsParams, soar: SOARClient, asset: Asset) -> list[SensorOutput]:
@@ -2249,10 +2494,59 @@ class SensorTaskingsSummary(ActionOutput):
     rule_count: int | None = None
 
 
+def _tasking_indicator_rows(indicators: list[Any] | None, base: str = "") -> list[dict]:
+    return [
+        {
+            "id": indicator.id,
+            "url": f"{base}/indicators/{indicator.id}" if base and indicator.id else "",
+            "type": indicator.type or "",
+            "value": indicator.value or "",
+            "classification": indicator.classification or "",
+        }
+        for indicator in indicators or []
+    ]
+
+
+def _tasking_rule_rows(rules: list[Any] | None) -> list[dict]:
+    return [
+        {
+            "id": rule.id,
+            "version": rule.versionNumber,
+            "classification": rule.classification or "",
+            "signature": rule.signature or "",
+        }
+        for rule in rules or []
+    ]
+
+
+@app.view_handler(template="display_sensor_taskings.html")
+def display_sensor_taskings_view(outputs: list[SensorTaskingsOutput]) -> dict:
+    """Taskings view: sensor header plus indicator and rule tables."""
+    records = []
+    for output in outputs:
+        if not output.id:
+            continue
+        base = _a1_ui_base(output.links)
+        records.append(
+            {
+                "id": output.id,
+                "url": f"{base}/sensors/{output.id}" if base else "",
+                "version": output.version,
+                "indicators": _tasking_indicator_rows(output.indicators, base),
+                "rules": _tasking_rule_rows(output.rules),
+            }
+        )
+    return {
+        "records": records,
+        "title1": "Analyst1 Sensor Taskings",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Fetch the indicators and rules currently tasked to an Analyst1 sensor",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_sensor_taskings_view,
     summary_type=SensorTaskingsSummary,
 )
 def get_sensor_taskings(params: GetSensorTaskingsParams, soar: SOARClient, asset: Asset) -> list[SensorTaskingsOutput]:
@@ -2288,6 +2582,7 @@ class SensorConfigOutput(ActionOutput):
     vault_id: str | None = OutputField(cef_types=["vault id"])
     file_name: str | None = None
     config_text: str | None = None
+    base_url: str | None = None  # asset server, injected at action time for view links
 
 
 class SensorConfigSummary(ActionOutput):
@@ -2295,10 +2590,31 @@ class SensorConfigSummary(ActionOutput):
     file_name: str | None = None
 
 
+@app.view_handler(template="display_sensor_config.html")
+def display_sensor_config_view(outputs: list[SensorConfigOutput]) -> dict:
+    """Detail view for a sensor's configuration file."""
+    records = []
+    for output in outputs:
+        records.append(
+            {
+                "sensor_id": output.sensor_id,
+                "url": f"{output.base_url}/sensors/{output.sensor_id}" if output.base_url and output.sensor_id else "",
+                "file_name": output.file_name or "",
+                "vault_id": output.vault_id or "",
+                "config_text": output.config_text or "",
+            }
+        )
+    return {
+        "records": records,
+        "title1": "Analyst1 Sensor Config",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Fetch an Analyst1 sensor's current configuration file and store it in the vault",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_sensor_config_view,
     summary_type=SensorConfigSummary,
 )
 def get_sensor_config(params: GetSensorConfigParams, soar: SOARClient, asset: Asset) -> list[SensorConfigOutput]:
@@ -2307,6 +2623,7 @@ def get_sensor_config(params: GetSensorConfigParams, soar: SOARClient, asset: As
     client = Analyst1Client(asset, asset.auth_state)
     try:
         config_text = client.get_sensor_config_text(params.sensor_id)
+        base_url = client.base_url
     finally:
         client.close()
 
@@ -2323,6 +2640,7 @@ def get_sensor_config(params: GetSensorConfigParams, soar: SOARClient, asset: As
             vault_id=vault_id,
             file_name=file_name,
             config_text=config_text,
+            base_url=base_url,
         )
     ]
 
@@ -2366,10 +2684,37 @@ class SensorDiffSummary(ActionOutput):
     rules_removed: int | None = None
 
 
+@app.view_handler(template="display_sensor_diff.html")
+def display_sensor_diff_view(outputs: list[SensorDiffOutput]) -> dict:
+    """Diff view: indicators and rules added/removed between config versions."""
+    records = []
+    for output in outputs:
+        if not output.id:
+            continue
+        base = _a1_ui_base(output.links)
+        records.append(
+            {
+                "id": output.id,
+                "url": f"{base}/sensors/{output.id}" if base else "",
+                "version": output.version,
+                "latest_version": output.latestVersion,
+                "indicators_added": _tasking_indicator_rows(output.indicatorsAdded, base),
+                "indicators_removed": _tasking_indicator_rows(output.indicatorsRemoved, base),
+                "rules_added": _tasking_rule_rows(output.rulesAdded),
+                "rules_removed": _tasking_rule_rows(output.rulesRemoved),
+            }
+        )
+    return {
+        "records": records,
+        "title1": "Analyst1 Sensor Diff",
+        "title2": "Threat Intelligence",
+    }
+
+
 @app.action(
     description="Fetch the tasking differences between an Analyst1 sensor config version and the latest version",
     action_type="investigate",
-    render_as="table",
+    view_handler=display_sensor_diff_view,
     summary_type=SensorDiffSummary,
 )
 def get_sensor_diff(params: GetSensorDiffParams, soar: SOARClient, asset: Asset) -> list[SensorDiffOutput]:

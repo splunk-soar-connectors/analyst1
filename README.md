@@ -1537,6 +1537,7 @@ action_result.data.\*.malware.\*.akas.\* | string | | |
 action_result.data.\*.system.\*.id | numeric | | |
 action_result.data.\*.system.\*.title | string | | |
 action_result.data.\*.system.\*.akas.\* | string | | |
+action_result.data.\*.base_url | string | | |
 action_result.summary.total_values | numeric | | |
 action_result.summary.total_results | numeric | | |
 summary.total_objects | numeric | | 1 |
@@ -2029,6 +2030,7 @@ action_result.data.\*.sensor_id | numeric | `analyst1 sensor id` | |
 action_result.data.\*.vault_id | string | `vault id` | |
 action_result.data.\*.file_name | string | | |
 action_result.data.\*.config_text | string | | |
+action_result.data.\*.base_url | string | | |
 action_result.summary.vault_id | string | | |
 action_result.summary.file_name | string | | |
 summary.total_objects | numeric | | 1 |

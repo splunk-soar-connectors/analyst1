@@ -1,4 +1,4 @@
-<!--
+{#-
  Copyright (c) 2026 Analyst1
 
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,325 +12,210 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
--->
-{% extends "base/logo_header.html" %}
-{% block title %}{{ title1 }}{% endblock %}
-{% block subtitle %}{{ title2 }}{% endblock %}
+
+ NOTE: this header must stay a Jinja comment, never an HTML comment:
+ the SOAR widgets pane injects the rendered response via $(data)[0]
+ and requires the widget div to be the first parsed node of the
+ response. Nothing may render before it.
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
 {% block widget_content %}
-  <style>
-    .a1 a:hover {
-        text-decoration: underline;
-    }
-
-    .a1 a {
-        text-decoration: underline !important;
-        font-weight: bold;
-    }
-
-    .a1 .wf-h4-style {
-        font-size: 20px
-    }
-
-    .a1 .wf-table-vertical .dataTable td {
-        vertical-align: top;
-        border-left: none !important;
-        border-right: none !important;
-        border-bottom: none !important;
-    }
-
-    .a1 .wf-table-vertical {
-        width: initial;
-        font-size: 12px;
-    }
-
-    .a1 .wf-table-vertical td {
-        padding: 5px;
-        border: 1px solid !important;
-    }
-
-    .a1 .wf-table-vertical tr td:first-child {
-        font-weight: bold;
-    }
-
-    .a1 .header-row {
-        text-align: center;
-    }
-
-    .a1 .dataTable th.widget-th {
-        border-top: 1px solid !important;
-        border-bottom: 1px solid !important;
-    }
-
-    .a1 .impact_table {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .a1 .dataTable td {
-        vertical-align: top;
-    }
-
-    .a1 .dataTable td.widget-td a {
-        font-size: 12px;
-    }
-
-    .a1 .dataTable {
-        font-size: 12px;
-    }
-
-    .a1 .overflow-column {
-        overflow: auto;
-    }
-
-
-  </style>
+  {% set type_labels = {
+    "domain": "Domain",
+    "email": "Email",
+    "file": "File",
+    "httpRequest": "HTTP Request",
+    "ip": "IP",
+    "ipv6": "IPv6",
+    "mutex": "Mutex",
+    "string": "String",
+    "url": "URL"
+  } %}
+  {{ a1.styles() }}
   <div class="a1">
-    <table class="phantom-table dataTable">
-      {% for result in results %}
-        {% if result.data %}
-          {% for record in result.data %}
-            <tr class="header-row">
-              <th colspan="2">General Attributes</th>
+    {% for result in results %}
+      {% if result.data %}
+        {% for record in result.data %}
+          {% set type_label = type_labels.get(record.type, record.type|title) %}
+          <div class="a1-badges">
+            {% if record.benign.value is true %}
+              {{ a1.badge('Benign', 'good') }}
+            {% elif record.benign.value is false %}
+              {{ a1.badge('Not Benign', 'warn') }}
+            {% endif %}
+            {% if record.active is true %}
+              {{ a1.badge('Active', 'bad') }}
+            {% elif record.active is false %}
+              {{ a1.badge('Inactive', 'neutral') }}
+            {% endif %}
+            {{ a1.badge("Confidence: " ~ record.confidenceLevel.value if record.confidenceLevel.value else "", "neutral") }}
+            {{ a1.badge(record.exploitStage.name ~ " stage" if record.exploitStage.name else "", "neutral") }}
+          </div>
+          <table class="phantom-table dataTable a1-table a1-kv">
+            <tr class="a1-section">
+              <td colspan="2">General Attributes</td>
             </tr>
             <tr>
-              <th>ID:</th>
-              <td>
-                <a href="{{ record.base_url }}/indicators/{{ record.id }}"
-                   target="_blank">{{ record.id }}</a>
-              </td>
+              <th>ID</th>
+              <td>{{ a1.ext_link(record.base_url ~ "/indicators/" ~ record.id if record.base_url else "", record.id) }}</td>
             </tr>
             <tr>
-              <th>Type:</th>
-              <td>{{ record.type|title }}</td>
+              <th>Type</th>
+              <td>{{ type_label }}</td>
             </tr>
             <tr>
-              <th>{{ record.type|title }}:</th>
-              <td>{{ record.value.name }}</td>
+              <th>{{ type_label }}</th>
+              <td class="pre-line">{{ record.value.name }}</td>
             </tr>
             {% if record.type in ['domain', 'ip', 'ipv6', 'url'] %}
               <tr>
-                <th>Ports:</th>
-                <td>
-                  {% for port in record.ports|sort(attribute='value') %}
-                    {% if not loop.last %}
-                      {{ port.value }},
-                    {% else %}
-                      {{ port.value }}
-                    {% endif %}
-                  {% endfor %}
-                </td>
+                <th>Ports</th>
+                <td>{{ a1.dash(a1.names(record.ports|sort(attribute='value') , attr='value')) }}</td>
               </tr>
             {% endif %}
             {% if record.type in ['domain', 'url'] %}
               <tr>
-                <th>IP Resolution:</th>
-                <td>{{ record.ipResolution.name }}</td>
+                <th>IP Resolution</th>
+                <td>{{ a1.dash(record.ipResolution.name) }}</td>
               </tr>
-            {% endif %}
-            {% if record.type in ['domain', 'ip', 'ipv6', 'url'] %}
-              <!--        <tr><th>IP Geolocation:</th><td></td></tr> TODO - Geolocation bug?-->
             {% endif %}
             {% if record.type in ['url', 'httpRequest'] %}
               <tr>
-                <th>Request Method(s):</th>
-                <td>
-                  {% for element in record.requestMethods %}
-                    {% if not loop.last %}
-                      {{ element.name }},
-                    {% else %}
-                      {{ element.name }}
-                    {% endif %}
-                  {% endfor %}
-                </td>
+                <th>Request Method(s)</th>
+                <td>{{ a1.dash(a1.names(record.requestMethods) ) }}</td>
               </tr>
             {% endif %}
             {% if record.type == 'email' %}
               <tr>
-                <th>Originating IP(s):</th>
-                <td>
-                  <ul style="list-style-type: none">
-                    {% for element in record.originatingIps|sort(attribute='name') %}<li>{{ element.name }}</li>{% endfor %}
-                  </ul>
-                </td>
+                <th>Originating IP(s)</th>
+                <td>{{ a1.dash(a1.names(record.originatingIps|sort(attribute='name') )) }}</td>
               </tr>
               <tr>
-                <th>Subject(s):</th>
-                <td>
-                  <ul style="list-style-type: none">
-                    {% for element in record.subjects|sort(attribute='name') %}<li>{{ element.name }}</li>{% endfor %}
-                  </ul>
-                </td>
+                <th>Subject(s)</th>
+                <td>{{ a1.dash(a1.names(record.subjects|sort(attribute='name') )) }}</td>
               </tr>
             {% endif %}
             {% if record.type == 'file' %}
               <tr>
-                <th>File Hash Value(s):</th>
+                <th>File Hash Value(s)</th>
                 <td>
-                  <ul style="list-style-type: none">
-                    {% for element in record.hashes %}<li>{{ element.type }}: {{ element.value }}</li>{% endfor %}
-                  </ul>
+                  {% for element in record.hashes %}
+                    <div class="a1-mono">{{ element.type }}: {{ element.value }}</div>
+                  {% else %}
+                    <span class="a1-muted">&mdash;</span>
+                  {% endfor %}
                 </td>
               </tr>
               <tr>
-                <th>File Size:</th>
-                <td>{{ record.fileSize.value }}</td>
+                <th>File Size</th>
+                <td>{{ a1.dash(record.fileSize.value) }}</td>
               </tr>
               <tr>
-                <th>File Name(s):</th>
-                <td>
-                  <ul style="list-style-type: none">
-                    {% for element in record.fileNames|sort(attribute='name') %}<li>{{ element.name }}</li>{% endfor %}
-                  </ul>
-                </td>
+                <th>File Name(s)</th>
+                <td>{{ a1.dash(a1.names(record.fileNames|sort(attribute='name') )) }}</td>
               </tr>
               <tr>
-                <th>Path:</th>
-                <td>{{ record.path.name }}</td>
+                <th>Path</th>
+                <td>{{ a1.dash(record.path.name) }}</td>
               </tr>
             {% endif %}
-            <!--        <tr><th>IP Geolocation:</th><td></td></tr> TODO - Geolocation bug?-->
-            <!--        Enrichment Fields-->
             {% for enrichmentField in record.enrichmentFields %}
               <tr>
                 <th>{{ enrichmentField.name }}</th>
-                <td>{{ enrichmentField.value }}</td>
+                <td>{{ a1.dash(enrichmentField.value) }}</td>
               </tr>
             {% endfor %}
-            <!--        Intelligence Overview Section-->
-            <tr>
-              <th class="header-row" colspan="2">Intelligence Overview</th>
+            <tr class="a1-section">
+              <td colspan="2">Intelligence Overview</td>
             </tr>
             <tr>
-              <th>Associated Evidence:</th>
-              <td>{{ record.reportCount }}</td>
+              <th>Associated Evidence</th>
+              <td>{{ a1.dash(record.reportCount) }}</td>
             </tr>
             <tr>
               <th>Reported Date Range</th>
               <td>
                 {% set first_reported = record.reportedDates|first %}
-                {{ first_reported.date if first_reported else '' }}
-                -
                 {% set last_reported = record.reportedDates|last %}
-                {{ last_reported.date if last_reported else '' }}
+                {% if first_reported %}
+                  {{ first_reported.date }} &ndash; {{ last_reported.date }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
               </td>
             </tr>
             <tr>
               <th>Activity Date Range</th>
               <td>
                 {% set first_activity = record.activityDates|first %}
-                {{ first_activity.date if first_activity else '' }}
-                -
                 {% set last_activity = record.activityDates|last %}
-                {{ last_activity.date if last_activity else '' }}
+                {% if first_activity %}
+                  {{ first_activity.date }} &ndash; {{ last_activity.date }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
               </td>
             </tr>
             <tr>
-              <th>Attack Pattern(s):</th>
-              <td>
-                {% for element in record.attackPatterns %}
-                  {% if not loop.last %}
-                    {{ element.name }},
-                  {% else %}
-                    {{ element.name }}
-                  {% endif %}
-                {% endfor %}
-              </td>
+              <th>Attack Pattern(s)</th>
+              <td>{{ a1.dash(a1.names(record.attackPatterns) ) }}</td>
             </tr>
             <tr>
-              <th>Threat Actor(s):</th>
+              <th>Threat Actor(s)</th>
               <td>
                 {% for element in record.actors %}
                   {% if element.id > 0 %}
-                    <a href="{{ record.base_url }}/actors/{{ element.id }}" target="_blank">{{ element.name }}</a>
+                    {{ a1.ext_link(record.base_url ~ "/actors/" ~ element.id, element.name) }}
                   {% else %}
                     {{ element.name }}
                   {% endif %}
-                  {% if not loop.last %},{% endif %}
+                  {%- if not loop.last %},{% endif %}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
                 {% endfor %}
               </td>
             </tr>
             <tr>
-              <th>Malware(s):</th>
+              <th>Malware(s)</th>
               <td>
                 {% for element in record.malwares %}
                   {% if element.id > 0 %}
-                    <a href="{{ record.base_url }}/malware/{{ element.id }}" target="_blank">{{ element.name }}</a>
+                    {{ a1.ext_link(record.base_url ~ "/malware/" ~ element.id, element.name) }}
                   {% else %}
                     {{ element.name }}
                   {% endif %}
-                  {% if not loop.last %},{% endif %}
+                  {%- if not loop.last %},{% endif %}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
                 {% endfor %}
               </td>
             </tr>
             <tr>
-              <th>Target(s):</th>
-              <td>
-                {% for element in record.targets %}
-                  {% if not loop.last %}
-                    {{ element.name }},
-                  {% else %}
-                    {{ element.name }}
-                  {% endif %}
-                {% endfor %}
-              </td>
+              <th>Target(s)</th>
+              <td>{{ a1.dash(a1.names(record.targets) ) }}</td>
             </tr>
             <tr>
-              <th>Exploit Stage:</th>
-              <td>{{ record.exploitStage.name }}</td>
+              <th>Campaign(s)</th>
+              <td>{{ a1.dash(a1.names(record.campaigns) ) }}</td>
             </tr>
             <tr>
-              <th>Campaign(s):</th>
-              <td>
-                {% for element in record.campaigns %}
-                  {% if not loop.last %}
-                    {{ element.name }},
-                  {% else %}
-                    {{ element.name }}
-                  {% endif %}
-                {% endfor %}
-              </td>
-            </tr>
-            <tr>
-              <th>Active Status:</th>
-              <td>{{ record.active }}</td>
-            </tr>
-            <tr>
-              <th>Benign?:</th>
-              <td>{{ record.benign.value }}</td>
-            </tr>
-            <tr>
-              <th>Confidence Level:</th>
-              <td>{{ record.confidenceLevel.value|default("Unknown") }}</td>
-            </tr>
-            <tr>
-              <th>Description:</th>
-              <td>
-                {{ record.description.name|replace('\n', '<br>') |safe }}
-              </td>
+              <th>Description</th>
+              <td class="pre-line">{{ a1.dash(record.description.name) }}</td>
             </tr>
             {% for enrichmentResult in record.enrichmentResults %}
-              <tr>
-                <th class="header-row" colspan="2">{{ enrichmentResult.name }} as of {{ enrichmentResult.date }}</th>
+              <tr class="a1-section">
+                <td colspan="2">{{ enrichmentResult.name }} as of {{ enrichmentResult.date }}</td>
               </tr>
               <tr>
-                {% if enrichmentResult.format == 'colonDelimited' %}
-                  <td colspan="2">
-                    {{ enrichmentResult.result|replace('\n', '<br>') |safe }}
-                  </td>
-                {% else %}
-                  <td colspan="2">{{ enrichmentResult.result }}</td>
-                {% endif %}
+                <td colspan="2" class="pre-line">{{ enrichmentResult.result }}</td>
               </tr>
             {% endfor %}
-          {% endfor %}
-        {% else %}
-          <table class="phantom-table dataTable">
-            <tr class="header-row">
-              <td colspan="2">No matches found</td>
-            </tr>
           </table>
-        {% endif %}
-      {% endfor %}
-    </table>
+        {% endfor %}
+      {% else %}
+        <div class="a1-empty">No matches found</div>
+      {% endif %}
+    {% endfor %}
   </div>
 {% endblock %}

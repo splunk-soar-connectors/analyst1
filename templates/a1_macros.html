@@ -1,0 +1,175 @@
+{#-
+ Copyright (c) 2026 Analyst1
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ Shared macros and styles for all Analyst1 action views.
+
+ Contract: view templates must render NOTHING before the widget root div
+ (the SOAR widgets pane injects the response via $(data)[0] and requires
+ the widget div to be the first parsed node), so license headers in
+ templates stay Jinja comments and this file is imported, never included
+ bare.
+
+ Theme rules: the widget inherits the platform's light or dark theme, so
+ all neutral colors derive from currentColor / rgba grays, and accent
+ colors are used as text+border only (no solid fills) so they read on
+ both backgrounds.
+-#}
+{%- macro styles() -%}
+  <style>
+    .a1 {
+        font-size: 12px;
+    }
+
+    .a1 a {
+        text-decoration: underline !important;
+        font-weight: 600;
+    }
+
+    .a1 a:hover {
+        text-decoration: underline;
+    }
+
+    .a1 table.a1-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .a1 .a1-table th,
+    .a1 .a1-table td {
+        padding: 5px 10px;
+        vertical-align: top;
+        text-align: left;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+    }
+
+    .a1 .a1-kv th {
+        width: 170px;
+        font-weight: 600;
+        opacity: 0.75;
+        white-space: nowrap;
+    }
+
+    .a1 .a1-grid thead th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        opacity: 0.75;
+        border-bottom: 2px solid rgba(128, 128, 128, 0.45);
+        white-space: nowrap;
+    }
+
+    .a1 .a1-section td {
+        padding-top: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        opacity: 0.65;
+        border-bottom: 2px solid rgba(128, 128, 128, 0.45);
+    }
+
+    .a1 .a1-badges {
+        padding: 6px 10px 2px;
+    }
+
+    .a1 .a1-badge {
+        display: inline-block;
+        padding: 1px 9px;
+        margin: 0 6px 4px 0;
+        border: 1px solid;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .a1 .a1-badge-good {
+        color: #4caf50;
+    }
+
+    .a1 .a1-badge-warn {
+        color: #ffa726;
+    }
+
+    .a1 .a1-badge-bad {
+        color: #ef5350;
+    }
+
+    .a1 .a1-badge-neutral {
+        opacity: 0.8;
+    }
+
+    .a1 .pre-line {
+        white-space: pre-line;
+    }
+
+    .a1 .a1-mono {
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 11px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+        /* the platform styles bare <pre> near-black; stay theme-colored */
+        color: inherit;
+        background: transparent;
+    }
+
+    .a1 .a1-muted {
+        opacity: 0.6;
+    }
+
+    .a1 .a1-count {
+        padding: 6px 10px;
+        opacity: 0.75;
+    }
+
+    .a1 .a1-empty {
+        padding: 14px 10px;
+        text-align: center;
+        opacity: 0.7;
+    }
+</style>
+{%- endmacro -%}
+{#- A pill badge; kinds: good / warn / bad / neutral. Skips empty text. -#}
+{%- macro badge(text, kind='neutral') -%}
+{%- if text is not none and text != '' -%}
+<span class="a1-badge a1-badge-{{ kind }}">{{ text }}</span>
+{%- endif -%}
+{%- endmacro -%}
+{#- Comma-joined attribute values from a list of dicts (or plain strings). -#}
+{%- macro names(items, attr='name', sep=', ') -%}
+{%- for e in items or [] -%}
+{{- (e.get(attr) if e is mapping else e) or '' -}}
+{%- if not loop.last %}{{ sep }}
+{% endif -%}
+{%- endfor -%}
+{%- endmacro -%}
+{#- A value, or a muted em dash when empty. -#}
+{%- macro dash(value) -%}
+{%- if value is none or value == '' or value == [] -%}
+<span class="a1-muted">&mdash;</span>
+{%- else -%}
+{{ value }}
+{%- endif -%}
+{%- endmacro -%}
+{#- External link opening a new tab; renders plain text when href is empty. -#}
+{%- macro ext_link(href, text) -%}
+{%- if href -%}
+<a href="{{ href }}" target="_blank" rel="noopener">{{ text }}</a>
+{%- else -%}
+{{ text }}
+{%- endif -%}
+{%- endmacro -%}

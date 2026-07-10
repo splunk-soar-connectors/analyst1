@@ -1,0 +1,61 @@
+{#-
+ Copyright (c) 2026 Analyst1
+ Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+ NOTE: header must stay a Jinja comment — nothing may render before the
+ widget root div (SOAR widgets-pane injection contract).
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
+{% block widget_content %}
+  {{ a1.styles() }}
+  <div class="a1">
+    {% if rows %}
+      <div class="a1-count">{{ rows|length }} result{{ "s" if rows|length != 1 }}</div>
+      <table class="phantom-table dataTable a1-table a1-grid">
+        <thead>
+          <tr>
+            <th>Searched Value</th>
+            <th>Matched</th>
+            <th>ID</th>
+            <th>Type</th>
+            <th>Risk Score</th>
+            <th>Benign</th>
+            <th>Actor(s)</th>
+            <th>Malware</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="a1-mono">{{ row.searched }}</td>
+              <td class="a1-mono">{{ a1.dash(row.matched) }}</td>
+              <td>
+                {% if row.id %}
+                  {{ a1.ext_link(row.url, row.id) }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
+              </td>
+              <td>{{ a1.dash(row.type) }}</td>
+              <td>{{ a1.dash(row.risk) }}</td>
+              <td>
+                {% if row.benign is true %}
+                  {{ a1.badge('Benign', 'good') }}
+                {% elif row.benign is false %}
+                  {{ a1.badge('Not Benign', 'warn') }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
+              </td>
+              <td>{{ a1.dash(a1.names(row.actors) ) }}</td>
+              <td>{{ a1.dash(a1.names(row.malware) ) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="a1-empty">No matches found</div>
+    {% endif %}
+  </div>
+{% endblock %}
