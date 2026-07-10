@@ -473,16 +473,18 @@ class Analyst1Client:
             return results if isinstance(results, list) else []
         return resp if isinstance(resp, list) else []
 
-    def get_evidence_upload_status(self, uuid: str) -> tuple[int, dict[str, Any]]:
+    def get_evidence_upload_status(self, uuid: str, retry_on_auth_error: bool = True) -> tuple[int, dict[str, Any]]:
         """Fetch an evidence upload's status; returns (status_code, body).
 
         check_evidence_status needs the HTTP status to distinguish a 204 (per
         the OpenAPI spec: "An error occurred processing the Evidence. No
         Evidence record available.") from a 200 with a null id (ingest still
         processing) -- both have empty/id-less bodies, so this bypasses
-        _make_request, which collapses them to {} (one-shot; no 401-retry,
-        same as get_sensor_config_text). A 404 body is parsed and returned
-        like _make_request does; other >=400 statuses raise.
+        _make_request, which collapses them to {}. A stale OAuth token is
+        refreshed and retried once like _make_request (this is a polled
+        endpoint, so calls routinely cross token-expiry windows). A 404 body
+        is parsed and returned like _make_request does; other >=400 statuses
+        raise.
         """
         url = f"{self.base_url}/api/{self._api_version}/evidence/uploadStatus/{uuid}"
         auth_kwargs = self._get_auth()
@@ -496,6 +498,12 @@ class Analyst1Client:
             response = self._client.request("GET", url, **kwargs)
         except Exception as e:
             raise Analyst1APIError(f"Error connecting to server: {e!s}") from e
+
+        if response.status_code == 401 and self._use_oauth and retry_on_auth_error:
+            logger.info("OAuth token invalid, clearing from state and refreshing...")
+            self._clear_token_from_state()
+            self._get_oauth_token(force_new=True)
+            return self.get_evidence_upload_status(uuid, retry_on_auth_error=False)
 
         if response.status_code == 404:
             try:

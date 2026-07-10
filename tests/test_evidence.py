@@ -15,7 +15,7 @@
 
 import pytest
 
-from tests.conftest import FAILED_INGEST_UUID, MISSING_STATUS_UUID
+from tests.conftest import FAILED_INGEST_UUID, MISSING_STATUS_UUID, oauth_asset
 
 
 UPLOAD_PARAMS = {
@@ -98,6 +98,19 @@ class TestCheckEvidenceStatus:
         assert result["status"] is True
         assert result["data"] == [{"message": None, "id": None}]
         assert result["summary"] == {"message": None, "evidence_id": None}
+
+    def test_oauth_token_refresh_on_401(self, api, run_action):
+        # get_evidence_upload_status bypasses _make_request, so it must carry
+        # the same refresh-and-retry-once on a server-rejected OAuth token:
+        # this is a polled endpoint and calls routinely cross token expiry.
+        api.api_401_remaining = 1  # first API call is rejected; refresh must recover
+
+        result = run_action("check_evidence_status", {"uuid": "abc-123-uuid"}, asset=oauth_asset())
+
+        assert result["status"] is True
+        assert result["data"] == [{"message": "Evidence upload complete", "id": 777}]
+        assert len(api.token_requests) == 2  # initial token + forced refresh
+        assert len(api.api_requests("/evidence/uploadStatus/")) == 2  # original call + exactly one retry
 
     def test_failed_ingest_204_reports_processing_failure(self, api, run_action):
         # Per the OpenAPI spec's 204 response description: "An error occurred
