@@ -88,6 +88,26 @@ def test_lookup_ip_invalid_value_fails_without_api_call(api, run_action):
     assert api.requests == []
 
 
+@pytest.mark.parametrize(("identifier", "param_name"), [("lookup_domain", "domain"), ("lookup_ip", "ip")])
+@pytest.mark.parametrize("value", ["", "   "], ids=["empty", "whitespace"])
+def test_lookup_blank_value_fails_without_api_call(api, run_action, identifier, param_name, value):
+    # A blank value is rejected locally (lookup_ip up front, the rest in
+    # _do_indicator_lookup) -- no client construction, no API call.
+    result = run_action(identifier, {param_name: value})
+
+    assert result["status"] is False
+    assert "No value provided for lookup" in result["message"]
+    assert api.requests == []
+
+
+def test_lookup_value_stripped_before_api_call(api, run_action):
+    result = run_action("lookup_domain", {"domain": "  test.com  "})
+
+    assert result["status"] is True
+    (match_request,) = api.api_requests("/indicator/match")
+    assert match_request["params"]["value"] == "test.com"
+
+
 class TestLookupDomainDecorations:
     def test_actor_link_only_for_id_greater_than_one(self, api, run_action):
         result = run_action("lookup_domain", {"domain": "test.com"})

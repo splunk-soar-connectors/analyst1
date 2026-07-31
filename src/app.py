@@ -20,6 +20,7 @@ import ipaddress
 import json
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 from bs4 import BeautifulSoup
@@ -375,10 +376,11 @@ class Analyst1Client:
         """Fetch an indicator by its Analyst1 numeric id; None when not found (404).
 
         Hash indicator ids may arrive suffixed (e.g. "14131-md5"); strip the
-        suffix like XSOAR's Client.get_indicator does.
+        suffix like XSOAR's Client.get_indicator does. The id is user-supplied
+        text, so it is URL-encoded before interpolation into the path.
         """
         clean_id = str(indicator_id).split("-")[0].split("_")[0]
-        resp = self.get(f"/indicator/{clean_id}")
+        resp = self.get(f"/indicator/{quote(clean_id, safe='')}")
         if not resp or not resp.get("id"):
             return None
         self._decorate_indicator(resp)
@@ -417,12 +419,12 @@ class Analyst1Client:
         resp = self.get(f"/sensors/{sensor_id}/taskings", timeout=200.0)
         return resp if isinstance(resp, dict) else {}
 
-    def get_sensor_config_text(self, sensor_id: int) -> str:
+    def get_sensor_config_text(self, sensor_id: int, retry_on_auth_error: bool = True) -> str:
         """Fetch a sensor's config file as raw text; "" when not found (404).
 
         The endpoint returns a text config file, not JSON, so this bypasses
-        _make_request's JSON parsing (one-shot; no 401-retry: config is a
-        rare manual action and the OAuth token is normally warm).
+        _make_request's JSON parsing. A stale OAuth token is refreshed and
+        retried once like _make_request.
         """
         url = f"{self.base_url}/api/{self._api_version}/sensors/{sensor_id}/taskings/config"
         auth_kwargs = self._get_auth()
@@ -436,6 +438,12 @@ class Analyst1Client:
             response = self._client.request("GET", url, **kwargs)
         except Exception as e:
             raise Analyst1APIError(f"Error connecting to server: {e!s}") from e
+
+        if response.status_code == 401 and self._use_oauth and retry_on_auth_error:
+            logger.info("OAuth token invalid, clearing from state and refreshing...")
+            self._clear_token_from_state()
+            self._get_oauth_token(force_new=True)
+            return self.get_sensor_config_text(sensor_id, retry_on_auth_error=False)
 
         if response.status_code == 404:
             return ""
@@ -484,9 +492,10 @@ class Analyst1Client:
         refreshed and retried once like _make_request (this is a polled
         endpoint, so calls routinely cross token-expiry windows). A 404 body
         is parsed and returned like _make_request does; other >=400 statuses
-        raise.
+        raise. The uuid is user-supplied text, so it is URL-encoded before
+        interpolation into the path.
         """
-        url = f"{self.base_url}/api/{self._api_version}/evidence/uploadStatus/{uuid}"
+        url = f"{self.base_url}/api/{self._api_version}/evidence/uploadStatus/{quote(uuid, safe='')}"
         auth_kwargs = self._get_auth()
         kwargs: dict[str, Any] = {}
         if "headers" in auth_kwargs:
@@ -1096,6 +1105,7 @@ class LookupIpParams(Params):
     ip: str = Param(
         description="IP to lookup",
         primary=True,
+        default="",
         cef_types=["ip", "ipv6"],
     )
 
@@ -1168,10 +1178,15 @@ def _do_indicator_lookup(
 ) -> list[IndicatorOutput]:
     """Common logic for indicator lookups.
 
+    A blank/whitespace-only value is rejected locally (ActionFailure) before
+    any client construction or API call; the value is stripped before matching.
     Classic parity (_handle_indicator_match): on a match, one data record plus
     summary.id; when the indicator is not found (API 404), no data records and
     an empty summary, with the action still succeeding.
     """
+    value = value.strip()
+    if not value:
+        raise ActionFailure("No value provided for lookup")
     client = Analyst1Client(asset, asset.auth_state)
     try:
         result = client.indicator_match(value, indicator_type)
@@ -1320,13 +1335,18 @@ def lookup_string(params: LookupStringParams, soar: SOARClient, asset: Asset) ->
 def lookup_ip(params: LookupIpParams, soar: SOARClient, asset: Asset) -> list[IpIndicatorOutput]:
     """Look up an IP address in Analyst1."""
     logger.info(f"Looking up IP: {params.ip}")
+    # A blank value would otherwise fail ip_address() with a confusing parse
+    # error; reject it up front like _do_indicator_lookup does.
+    ip_value = params.ip.strip()
+    if not ip_value:
+        raise ActionFailure("No value provided for lookup")
     # Determine if IPv4 or IPv6 (classic parity: an invalid IP fails the action)
     try:
-        ip_obj = ipaddress.ip_address(params.ip)
+        ip_obj = ipaddress.ip_address(ip_value)
     except ValueError as e:
         raise ActionFailure(str(e)) from e
     indicator_type = "ip" if ip_obj.version == 4 else "ipv6"
-    return _do_indicator_lookup(soar, asset, params.ip, indicator_type, IpIndicatorOutput)
+    return _do_indicator_lookup(soar, asset, ip_value, indicator_type, IpIndicatorOutput)
 
 
 @app.action(

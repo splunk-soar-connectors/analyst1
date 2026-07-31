@@ -99,6 +99,15 @@ class TestCheckEvidenceStatus:
         assert result["data"] == [{"message": None, "id": None}]
         assert result["summary"] == {"message": None, "evidence_id": None}
 
+    def test_uuid_is_url_encoded_in_request_path(self, api, run_action):
+        # A user-supplied uuid must not be able to rewrite the request path;
+        # it is percent-encoded before interpolation.
+        result = run_action("check_evidence_status", {"uuid": "abc/123 uuid"})
+
+        assert result["status"] is True
+        (status_request,) = api.api_requests("/evidence/uploadStatus/")
+        assert status_request["url"].endswith("/evidence/uploadStatus/abc%2F123%20uuid")
+
     def test_oauth_token_refresh_on_401(self, api, run_action):
         # get_evidence_upload_status bypasses _make_request, so it must carry
         # the same refresh-and-retry-once on a server-rejected OAuth token:

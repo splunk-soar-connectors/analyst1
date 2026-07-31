@@ -16,7 +16,7 @@
 import json
 
 import app as analyst1_app
-from tests.conftest import ERROR_SENSOR_ID, MISSING_SENSOR_ID, NO_FINALIZED_SENSOR_ID, SENSOR_ID
+from tests.conftest import ERROR_SENSOR_ID, MISSING_SENSOR_ID, NO_FINALIZED_SENSOR_ID, SENSOR_ID, oauth_asset
 
 
 class TestGetSensors:
@@ -140,6 +140,30 @@ class TestGetSensorConfig:
 
         assert result["status"] is False
         assert "API error. Status: 500" in result["message"]
+
+    def test_oauth_token_refresh_on_401(self, api, run_action):
+        # get_sensor_config_text bypasses _make_request, so it must carry the
+        # same refresh-and-retry-once on a server-rejected OAuth token.
+        api.api_401_remaining = 1  # first API call is rejected; refresh must recover
+
+        result = run_action("get_sensor_config", {"sensor_id": SENSOR_ID}, asset=oauth_asset())
+
+        assert result["status"] is True
+        (record,) = result["data"]
+        assert record["config_text"] == api.sensor_config_text
+        assert len(api.token_requests) == 2  # initial token + forced refresh
+        assert len(api.api_requests("/taskings/config")) == 2  # original call + exactly one retry
+        # The local fallback vault is process-global; drop the attachment again.
+        analyst1_app.app.soar_client.vault.delete_attachment(vault_id=record["vault_id"])
+
+    def test_oauth_persistent_401_fails_after_single_retry(self, api, run_action):
+        api.api_401_always = True
+
+        result = run_action("get_sensor_config", {"sensor_id": SENSOR_ID}, asset=oauth_asset())
+
+        assert result["status"] is False
+        assert "API error. Status: 401" in result["message"]
+        assert len(api.api_requests("/taskings/config")) == 2  # original call + exactly one retry, no more
 
 
 class TestGetSensorDiff:

@@ -52,6 +52,23 @@ class TestGetIndicatorById:
         assert result["data"] == []
         assert result["summary"] == {}
 
+    @pytest.mark.parametrize(
+        ("raw_id", "encoded_id"),
+        [
+            ("abc/../def", "abc%2F..%2Fdef"),
+            ("12345 67", "12345%2067"),
+        ],
+    )
+    def test_id_with_path_characters_is_url_encoded(self, api, run_action, raw_id, encoded_id):
+        # A user-supplied id must not be able to rewrite the request path; it
+        # is percent-encoded before interpolation (the unknown id then 404s).
+        result = run_action("get_indicator_by_id", {"indicator_id": raw_id})
+
+        assert result["status"] is True
+        assert result["data"] == []
+        (by_id_request,) = api.api_requests("/indicator/")
+        assert by_id_request["url"].endswith(f"/indicator/{encoded_id}")
+
 
 class TestGetActorById:
     def test_happy_path(self, api, run_action):

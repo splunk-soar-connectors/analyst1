@@ -218,7 +218,11 @@ class MockAnalyst1API:
             return self._handle_match(record["params"])
         if "/batchCheck" in request.url.path:
             return self._handle_batch_check(record["params"])
-        segments = [segment for segment in request.url.path.split("/") if segment]  # e.g. /api/1_0/actor/7
+        # Route on the percent-ENCODED path: request.url.path decodes %2F back
+        # to "/", which would let an encoded id smuggle extra path segments
+        # into route matching. raw_path carries the query string when present.
+        encoded_path = request.url.raw_path.decode().split("?")[0]
+        segments = [segment for segment in encoded_path.split("/") if segment]  # e.g. /api/1_0/actor/7
         if len(segments) == 4 and segments[2] in ("indicator", "actor", "malware"):
             return self._handle_by_id(segments[2], segments[3])
         if len(segments) >= 3 and segments[2] == "sensors":
