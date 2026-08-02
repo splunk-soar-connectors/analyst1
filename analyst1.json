@@ -1,6 +1,6 @@
 {
-    "appid": "ffffffff-ffff-4fff-afff-ffffffffffff",
-    "name": "Example App Name",
+    "appid": "8ee822f1-a285-44f4-b8e7-303245811a32",
+    "name": "Analyst1",
     "description": "Brief description of the app",
     "type": "information",
     "product_vendor": "Vendor Name",
@@ -11,6 +11,9 @@
     "publisher": "Splunk",
     "license": "Copyright (c) 2025-2026 Splunk Inc.",
     "app_version": "1.0.1",
+    "pip313_dependencies": {
+        "wheel": []
+    },
     "latest_tested_versions": [
         "Version X.Y.Z, Month Year"
     ],
