@@ -114,8 +114,8 @@ class Asset(BaseAsset):
     )
     verify_ssl: bool = AssetField(
         required=False,
-        description="Require SSL verification",
-        default=False,
+        description="Verify the API server certificate",
+        default=True,
     )
     client_id: str = AssetField(
         required=False,

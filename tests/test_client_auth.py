@@ -34,6 +34,12 @@ from tests.conftest import (
 )
 
 
+def test_verify_ssl_defaults_to_enabled():
+    """Certificate verification must default ON (Splunk security baseline)."""
+    asset = analyst1_app.Asset(base_url=BASE_URL)
+    assert asset.verify_ssl is True
+
+
 def _basic_auth_header() -> str:
     credentials = f"{BASIC_USERNAME}:{BASIC_PASSWORD}".encode()
     return f"Basic {base64.b64encode(credentials).decode()}"

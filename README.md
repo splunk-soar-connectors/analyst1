@@ -42,7 +42,7 @@ This table lists the configuration variables required to operate Analyst1. These
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
 **base_url** | required | string | Base URL with no trailing slash (e.g. https://analyst1.customer.com) |
-**verify_ssl** | optional | boolean | Require SSL verification |
+**verify_ssl** | optional | boolean | Verify the API server certificate |
 **client_id** | optional | string | Analyst1 Client ID (Oauth2 authentication) |
 **client_secret** | optional | password | Analyst1 Client Secret (Oauth2 authentication) |
 **username** | optional | string | Analyst1 Username (Basic authentication for REST-enabled account) |
