@@ -1,0 +1,6 @@
+# Synthetic Analyst1 sensor config for unit tests (sensor 401, version 4)
+alert tcp any any -> any any (msg:"TEST RULE"; sid:9000001;)
+alert udp any any -> any any (msg:"TEST RULE 2"; sid:9000002;)
+# indicators
+198.51.100.7
+added.example.com

@@ -1,0 +1,33 @@
+{#-
+ Copyright (c) 2026 Analyst1
+ Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+ NOTE: header must stay a Jinja comment — nothing may render before the
+ widget root div (SOAR widgets-pane injection contract).
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
+{% block widget_content %}
+  {{ a1.styles() }}
+  <div class="a1">
+    {% if uuids %}
+      {% for uuid in uuids %}
+        <div class="a1-badges">{{ a1.badge('Submitted', 'good') }}</div>
+        <table class="phantom-table dataTable a1-table a1-kv">
+          <tr>
+            <th>Upload UUID</th>
+            <td class="a1-mono">{{ uuid }}</td>
+          </tr>
+          <tr>
+            <th>Next Step</th>
+            <td>
+              Ingest is asynchronous &mdash; run <em>check evidence status</em> with this UUID to get the evidence ID.
+            </td>
+          </tr>
+        </table>
+      {% endfor %}
+    {% else %}
+      <div class="a1-empty">No upload receipt returned</div>
+    {% endif %}
+  </div>
+{% endblock %}

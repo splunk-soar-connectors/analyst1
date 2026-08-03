@@ -1,0 +1,57 @@
+{
+  "results": [
+    {
+      "searchedValue": "example.com",
+      "matchedValue": "example.com",
+      "id": 12345,
+      "entity": {
+        "key": "INDICATOR",
+        "title": "Indicator"
+      },
+      "type": {
+        "key": "DOMAIN",
+        "title": "Domain"
+      },
+      "benign": false,
+      "indicatorRiskScore": {
+        "key": "MALICIOUS",
+        "title": "Malicious"
+      },
+      "actor": [
+        {
+          "id": 2,
+          "title": "TEST-ACTOR-BEAR",
+          "akas": [
+            "TEST-BEAR-AKA"
+          ]
+        }
+      ],
+      "malware": [
+        {
+          "id": 7,
+          "title": "TEST-MALWARE",
+          "akas": []
+        }
+      ],
+      "system": []
+    },
+    {
+      "searchedValue": "8.8.8.8",
+      "matchedValue": "8.8.8.8",
+      "id": 54321,
+      "entity": {
+        "key": "INDICATOR",
+        "title": "Indicator"
+      },
+      "type": {
+        "key": "IP",
+        "title": "IP"
+      },
+      "benign": null,
+      "indicatorRiskScore": null,
+      "actor": [],
+      "malware": [],
+      "system": null
+    }
+  ]
+}

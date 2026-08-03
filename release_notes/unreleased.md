@@ -1,1 +1,17 @@
 **Unreleased**
+* Convert app to the Splunk SOAR SDK (splunk-soar-sdk 3.25.3); version 1.3.0 replaces the classic Analyst1 app (v1.2.1) under the same appid and requires Splunk SOAR 7.0 or later
+* Add batch check action: check a batch of indicator values (type auto-detected by the API) against the Analyst1 platform
+* Add get indicator by id, get actor by id, and get malware by id actions to fetch Analyst1 resources by their numeric ID
+* Add sensor actions: get sensors, get sensor taskings, get sensor config (stores the configuration file in the vault), and get sensor diff
+* Add contains types to the new actions' parameters and id output fields (analyst1 indicator id, analyst1 actor id, analyst1 malware id, analyst1 sensor id; broad indicator types on batch check values and ipv6 on lookup ipv6) to enable contextual action pivots in the SOAR UI
+* Restore the classic nested action_result.data.* datapath contract on all lookup actions
+* enrichmentResults.*.result is now always a JSON string; previous versions parsed json-format enrichment results into an object at runtime
+* Datapath shape corrections on lookup actions: exploitStage (.id/.name/.classification), path (.name/.classification), fileSize (.value/.classification), and domainRegistration (.name/.classification) are objects, originatingIps is a list of objects, and hitCount is numeric, matching actual API payloads and the Analyst1 OpenAPI 2.15.0 specification
+* Correct the enrichmentFields datapath name on lookup actions: previous versions declared enrichmentFields.\*.nunmeric (a typo the API never populates); the field is now enrichmentFields.\*.numeric per the Analyst1 OpenAPI EnrichmentFieldResource
+* Fix the enrichment result friendly-name mapping on lookup actions: previous versions keyed the display-name map on camelCase types while the API sends uppercase enum values (for example WHOIS_IP_REGISTRATION), so the friendly name never applied; the map now covers all 17 documented enrichment sources and falls back to the raw type for unknown values
+* Normalize the API's object-form links serialization into the documented links.\*.{rel,href} list on lookup actions; the API serializes links as a rel-keyed object under both authentication modes, and previous versions declared the list datapaths but never populated them
+* Extract readable text from HTML error responses (for example authentication or proxy error pages) into action error messages, matching classic behavior
+* Report failed evidence ingest distinctly in check evidence status (HTTP 204 from the upload status endpoint now yields "Evidence processing failed" instead of an empty result)
+* Model additional 1_1 API indicator fields on lookup actions: activityRange, reportedRange, verifiedDateRange (.startDate/.endDate/.classification), sources (.id/.type/.title/.url/.category/.enabled), tags (.id/.name), externalhitCount, firstExternalHit, lastExternalHit, expand, indicatorDerivation, integrationSources, stixObjects (.id/.reportingSourceId/.type), verifications (.verifier/.verifierOrg/.verificationDate/.evidenceId/.evidenceTitle), and hitStatDetails (nested per-source hit statistics with dimensions and dimension values); absent under basic-auth (1_0) responses
+* Replace the app logos with official Analyst1 brand SVGs (light and dark theme variants) sized for the SOAR UI
+* Enable TLS certificate verification by default; existing assets must trust the API server certificate chain or explicitly disable verification

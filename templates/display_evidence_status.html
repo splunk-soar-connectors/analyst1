@@ -1,0 +1,29 @@
+{#-
+ Copyright (c) 2026 Analyst1
+ Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+ NOTE: header must stay a Jinja comment — nothing may render before the
+ widget root div (SOAR widgets-pane injection contract).
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
+{% block widget_content %}
+  {{ a1.styles() }}
+  <div class="a1">
+    {% for record in records %}
+      <div class="a1-badges">{{ a1.badge(record.state, record.kind) }}</div>
+      <table class="phantom-table dataTable a1-table a1-kv">
+        <tr>
+          <th>Message</th>
+          <td>{{ a1.dash(record.message) }}</td>
+        </tr>
+        <tr>
+          <th>Evidence ID</th>
+          <td>{{ a1.dash(record.id) }}</td>
+        </tr>
+      </table>
+    {% else %}
+      <div class="a1-empty">No status returned</div>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{
+  "id": 401,
+  "version": 4,
+  "indicators": [
+    {
+      "id": 1001,
+      "type": "ip",
+      "value": "198.51.100.7",
+      "classification": "U",
+      "fileHashes": null,
+      "links": {
+        "details": {
+          "href": "https://analyst1.example.com/api/1_1/indicator/1001"
+        }
+      }
+    },
+    {
+      "id": 1002,
+      "type": "file",
+      "value": null,
+      "classification": "U",
+      "fileHashes": {
+        "MD5": "00000000000000000000000000000001",
+        "SHA1": "0000000000000000000000000000000000000001"
+      },
+      "links": {
+        "details": {
+          "href": "https://analyst1.example.com/api/1_1/indicator/1002"
+        }
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": 2001,
+      "versionNumber": 1,
+      "signature": "alert tcp any any -> any any (msg:\"TEST RULE\"; sid:9000001;)",
+      "classification": "U",
+      "links": {
+        "details": {
+          "href": "https://analyst1.example.com/api/1_1/rules/2001"
+        }
+      }
+    }
+  ],
+  "links": {
+    "self": {
+      "href": "https://analyst1.example.com/api/1_1/sensors/401/taskings"
+    }
+  }
+}

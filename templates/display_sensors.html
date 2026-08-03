@@ -1,0 +1,57 @@
+{#-
+ Copyright (c) 2026 Analyst1
+ Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+ NOTE: header must stay a Jinja comment — nothing may render before the
+ widget root div (SOAR widgets-pane injection contract).
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
+{% block widget_content %}
+  {{ a1.styles() }}
+  <div class="a1">
+    {% if rows %}
+      <div class="a1-count">{{ rows|length }} sensor{{ "s" if rows|length != 1 }}</div>
+      <table class="phantom-table dataTable a1-table a1-grid">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Location</th>
+            <th>Org</th>
+            <th>Current Version</th>
+            <th>Latest Config</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>
+                {% if row.id %}
+                  {{ a1.ext_link(row.url, row.id) }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.name %}
+                  {{ a1.ext_link(row.url, row.name) }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
+              </td>
+              <td>{{ a1.dash(row.type) }}</td>
+              <td>{{ a1.dash(row.location) }}</td>
+              <td>{{ a1.dash(row.org) }}</td>
+              <td>{{ a1.dash(row.current_version) }}</td>
+              <td>{{ a1.dash(row.latest_config_version) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="a1-empty">No sensors found</div>
+    {% endif %}
+  </div>
+{% endblock %}

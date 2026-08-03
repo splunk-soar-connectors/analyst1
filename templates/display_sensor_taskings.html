@@ -1,0 +1,77 @@
+{#-
+ Copyright (c) 2026 Analyst1
+ Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+ NOTE: header must stay a Jinja comment — nothing may render before the
+ widget root div (SOAR widgets-pane injection contract).
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
+{% block widget_content %}
+  {{ a1.styles() }}
+  <div class="a1">
+    {% for record in records %}
+      <div class="a1-badges">
+        <span class="a1-badge a1-badge-neutral">{{ a1.ext_link(record.url, "Sensor " ~ record.id) }}</span>
+        {{ a1.badge("Version " ~ record.version if record.version is not none else "", "neutral") }}
+        {{ a1.badge((record.indicators|length) ~ " indicators", "neutral") }}
+        {{ a1.badge((record.rules|length) ~ " rules", "neutral") }}
+      </div>
+      {% if record.indicators %}
+        <table class="phantom-table dataTable a1-table a1-grid">
+          <thead>
+            <tr>
+              <th>Indicator ID</th>
+              <th>Type</th>
+              <th>Value</th>
+              <th>Classification</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in record.indicators %}
+              <tr>
+                <td>
+                  {% if row.id %}
+                    {{ a1.ext_link(row.url, row.id) }}
+                  {% else %}
+                    <span class="a1-muted">&mdash;</span>
+                  {% endif %}
+                </td>
+                <td>{{ a1.dash(row.type) }}</td>
+                <td class="a1-mono">{{ a1.dash(row.value) }}</td>
+                <td>{{ a1.dash(row.classification) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      {% if record.rules %}
+        <table class="phantom-table dataTable a1-table a1-grid">
+          <thead>
+            <tr>
+              <th>Rule ID</th>
+              <th>Version</th>
+              <th>Classification</th>
+              <th>Signature</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in record.rules %}
+              <tr>
+                <td>{{ a1.dash(row.id) }}</td>
+                <td>{{ a1.dash(row.version) }}</td>
+                <td>{{ a1.dash(row.classification) }}</td>
+                <td>
+                  <pre class="a1-mono">{{ row.signature }}</pre>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      {% if not record.indicators and not record.rules %}<div class="a1-empty">No taskings for this sensor</div>{% endif %}
+    {% else %}
+      <div class="a1-empty">No taskings found</div>
+    {% endfor %}
+  </div>
+{% endblock %}

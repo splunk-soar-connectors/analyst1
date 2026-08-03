@@ -1,0 +1,221 @@
+{#-
+ Copyright (c) 2026 Analyst1
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+ NOTE: this header must stay a Jinja comment, never an HTML comment:
+ the SOAR widgets pane injects the rendered response via $(data)[0]
+ and requires the widget div to be the first parsed node of the
+ response. Nothing may render before it.
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
+{% block widget_content %}
+  {% set type_labels = {
+    "domain": "Domain",
+    "email": "Email",
+    "file": "File",
+    "httpRequest": "HTTP Request",
+    "ip": "IP",
+    "ipv6": "IPv6",
+    "mutex": "Mutex",
+    "string": "String",
+    "url": "URL"
+  } %}
+  {{ a1.styles() }}
+  <div class="a1">
+    {% for result in results %}
+      {% if result.data %}
+        {% for record in result.data %}
+          {% set type_label = type_labels.get(record.type, record.type|title) %}
+          <div class="a1-badges">
+            {% if record.benign.value is true %}
+              {{ a1.badge('Benign', 'good') }}
+            {% elif record.benign.value is false %}
+              {{ a1.badge('Not Benign', 'warn') }}
+            {% endif %}
+            {% if record.active is true %}
+              {{ a1.badge('Active', 'bad') }}
+            {% elif record.active is false %}
+              {{ a1.badge('Inactive', 'neutral') }}
+            {% endif %}
+            {{ a1.badge("Confidence: " ~ record.confidenceLevel.value if record.confidenceLevel.value else "", "neutral") }}
+            {{ a1.badge(record.exploitStage.name ~ " stage" if record.exploitStage.name else "", "neutral") }}
+          </div>
+          <table class="phantom-table dataTable a1-table a1-kv">
+            <tr class="a1-section">
+              <td colspan="2">General Attributes</td>
+            </tr>
+            <tr>
+              <th>ID</th>
+              <td>{{ a1.ext_link(record.base_url ~ "/indicators/" ~ record.id if record.base_url else "", record.id) }}</td>
+            </tr>
+            <tr>
+              <th>Type</th>
+              <td>{{ type_label }}</td>
+            </tr>
+            <tr>
+              <th>{{ type_label }}</th>
+              <td class="pre-line">{{ record.value.name }}</td>
+            </tr>
+            {% if record.type in ['domain', 'ip', 'ipv6', 'url'] %}
+              <tr>
+                <th>Ports</th>
+                <td>{{ a1.dash(a1.names(record.ports|sort(attribute='value') , attr='value')) }}</td>
+              </tr>
+            {% endif %}
+            {% if record.type in ['domain', 'url'] %}
+              <tr>
+                <th>IP Resolution</th>
+                <td>{{ a1.dash(record.ipResolution.name) }}</td>
+              </tr>
+            {% endif %}
+            {% if record.type in ['url', 'httpRequest'] %}
+              <tr>
+                <th>Request Method(s)</th>
+                <td>{{ a1.dash(a1.names(record.requestMethods) ) }}</td>
+              </tr>
+            {% endif %}
+            {% if record.type == 'email' %}
+              <tr>
+                <th>Originating IP(s)</th>
+                <td>{{ a1.dash(a1.names(record.originatingIps|sort(attribute='name') )) }}</td>
+              </tr>
+              <tr>
+                <th>Subject(s)</th>
+                <td>{{ a1.dash(a1.names(record.subjects|sort(attribute='name') )) }}</td>
+              </tr>
+            {% endif %}
+            {% if record.type == 'file' %}
+              <tr>
+                <th>File Hash Value(s)</th>
+                <td>
+                  {% for element in record.hashes %}
+                    <div class="a1-mono">{{ element.type }}: {{ element.value }}</div>
+                  {% else %}
+                    <span class="a1-muted">&mdash;</span>
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <th>File Size</th>
+                <td>{{ a1.dash(record.fileSize.value) }}</td>
+              </tr>
+              <tr>
+                <th>File Name(s)</th>
+                <td>{{ a1.dash(a1.names(record.fileNames|sort(attribute='name') )) }}</td>
+              </tr>
+              <tr>
+                <th>Path</th>
+                <td>{{ a1.dash(record.path.name) }}</td>
+              </tr>
+            {% endif %}
+            {% for enrichmentField in record.enrichmentFields %}
+              <tr>
+                <th>{{ enrichmentField.name }}</th>
+                <td>{{ a1.dash(enrichmentField.value) }}</td>
+              </tr>
+            {% endfor %}
+            <tr class="a1-section">
+              <td colspan="2">Intelligence Overview</td>
+            </tr>
+            <tr>
+              <th>Associated Evidence</th>
+              <td>{{ a1.dash(record.reportCount) }}</td>
+            </tr>
+            <tr>
+              <th>Reported Date Range</th>
+              <td>
+                {% set first_reported = record.reportedDates|first %}
+                {% set last_reported = record.reportedDates|last %}
+                {% if first_reported %}
+                  {{ first_reported.date }} &ndash; {{ last_reported.date }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <th>Activity Date Range</th>
+              <td>
+                {% set first_activity = record.activityDates|first %}
+                {% set last_activity = record.activityDates|last %}
+                {% if first_activity %}
+                  {{ first_activity.date }} &ndash; {{ last_activity.date }}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <th>Attack Pattern(s)</th>
+              <td>{{ a1.dash(a1.names(record.attackPatterns) ) }}</td>
+            </tr>
+            <tr>
+              <th>Threat Actor(s)</th>
+              <td>
+                {% for element in record.actors %}
+                  {% if element.id > 0 %}
+                    {{ a1.ext_link(record.base_url ~ "/actors/" ~ element.id, element.name) }}
+                  {% else %}
+                    {{ element.name }}
+                  {% endif %}
+                  {%- if not loop.last %},{% endif %}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endfor %}
+              </td>
+            </tr>
+            <tr>
+              <th>Malware(s)</th>
+              <td>
+                {% for element in record.malwares %}
+                  {% if element.id > 0 %}
+                    {{ a1.ext_link(record.base_url ~ "/malware/" ~ element.id, element.name) }}
+                  {% else %}
+                    {{ element.name }}
+                  {% endif %}
+                  {%- if not loop.last %},{% endif %}
+                {% else %}
+                  <span class="a1-muted">&mdash;</span>
+                {% endfor %}
+              </td>
+            </tr>
+            <tr>
+              <th>Target(s)</th>
+              <td>{{ a1.dash(a1.names(record.targets) ) }}</td>
+            </tr>
+            <tr>
+              <th>Campaign(s)</th>
+              <td>{{ a1.dash(a1.names(record.campaigns) ) }}</td>
+            </tr>
+            <tr>
+              <th>Description</th>
+              <td class="pre-line">{{ a1.dash(record.description.name) }}</td>
+            </tr>
+            {% for enrichmentResult in record.enrichmentResults %}
+              <tr class="a1-section">
+                <td colspan="2">{{ enrichmentResult.name }} as of {{ enrichmentResult.date }}</td>
+              </tr>
+              <tr>
+                <td colspan="2" class="pre-line">{{ enrichmentResult.result }}</td>
+              </tr>
+            {% endfor %}
+          </table>
+        {% endfor %}
+      {% else %}
+        <div class="a1-empty">No matches found</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{#-
+ Copyright (c) 2026 Analyst1
+ Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+ NOTE: header must stay a Jinja comment — nothing may render before the
+ widget root div (SOAR widgets-pane injection contract).
+-#}
+{% extends "widgets/widget_template.html" %}
+{% import "a1_macros.html" as a1 %}
+{% block widget_content %}
+  {{ a1.styles() }}
+  <div class="a1">
+    {% for record in records %}
+      <div class="a1-badges">
+        {{ a1.badge(record.title, "bad") }}
+        {% for aka in record.akas %}
+          {% if aka != record.title %}{{ a1.badge(aka, "neutral") }}{% endif %}
+        {% endfor %}
+      </div>
+      <table class="phantom-table dataTable a1-table a1-kv">
+        <tr>
+          <th>ID</th>
+          <td>{{ a1.ext_link(record.url, record.id) }}</td>
+        </tr>
+        <tr>
+          <th>Country</th>
+          <td>{{ a1.dash(record.country) }}</td>
+        </tr>
+        <tr>
+          <th>Sponsor</th>
+          <td>{{ a1.dash(record.sponsor) }}</td>
+        </tr>
+        <tr>
+          <th>Primary Motivation</th>
+          <td>{{ a1.dash(record.primary_motivation) }}</td>
+        </tr>
+        {% if record.secondary_motivations %}
+          <tr>
+            <th>Secondary Motivation(s)</th>
+            <td>{{ a1.names(record.secondary_motivations) }}</td>
+          </tr>
+        {% endif %}
+        {% if record.personal_motivations %}
+          <tr>
+            <th>Personal Motivation(s)</th>
+            <td>{{ a1.names(record.personal_motivations) }}</td>
+          </tr>
+        {% endif %}
+        <tr>
+          <th>Activity Range</th>
+          <td>{{ a1.dash(record.activity_range) }}</td>
+        </tr>
+        <tr>
+          <th>Attack Pattern(s)</th>
+          <td>{{ a1.dash(a1.names(record.attack_patterns) ) }}</td>
+        </tr>
+        <tr>
+          <th>Target(s)</th>
+          <td>{{ a1.dash(a1.names(record.targets) ) }}</td>
+        </tr>
+        <tr>
+          <th>Campaign(s)</th>
+          <td>{{ a1.dash(a1.names(record.campaigns) ) }}</td>
+        </tr>
+        <tr>
+          <th>Malware</th>
+          <td>
+            {% for m in record.malware %}
+              {{ a1.ext_link(m.url, m.name) }}
+              {% if not loop.last %},{% endif %}
+            {% else %}
+              <span class="a1-muted">&mdash;</span>
+            {% endfor %}
+          </td>
+        </tr>
+        <tr>
+          <th>CVE(s)</th>
+          <td>{{ a1.dash(a1.names(record.cves) ) }}</td>
+        </tr>
+        <tr>
+          <th>Description</th>
+          <td class="pre-line">{{ a1.dash(record.description) }}</td>
+        </tr>
+      </table>
+    {% else %}
+      <div class="a1-empty">Actor not found</div>
+    {% endfor %}
+  </div>
+{% endblock %}
