@@ -1,6 +1,6 @@
 [project]
 name = "analyst1"
-version = "1.3.0"
+version = "1.0.0"
 description = "Interact with the Analyst1 API to power SOAR workflows, including indicator lookups, evidence management, and other supported Analyst1 operations."
 license = "Copyright (c) 2025-2026 Analyst1"
 requires-python = ">=3.13, <3.15"
