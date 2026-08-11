@@ -542,7 +542,7 @@ class Analyst1Client:
 # =============================================================================
 
 app = App(
-    name="Analyst1",
+    name="Analyst1 for Splunk SOAR",
     app_type="information",
     logo="logo_analyst1.svg",
     logo_dark="logo_analyst1_dark.svg",
