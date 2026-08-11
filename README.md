@@ -1,7 +1,7 @@
 # Analyst1 for Splunk SOAR
 
 Publisher: Analyst1 <br>
-Connector Version: 1.0.0 <br>
+Connector Version: 2.0.0 <br>
 Product Vendor: Analyst1 <br>
 Product Name: Analyst1 <br>
 Minimum Product Version: 7.0.0
