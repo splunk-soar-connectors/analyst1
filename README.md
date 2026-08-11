@@ -1,4 +1,4 @@
-# Analyst1
+# Analyst1 for Splunk SOAR
 
 Publisher: Analyst1 <br>
 Connector Version: 1.0.0 <br>
@@ -37,7 +37,7 @@ If both credential pairs are configured, OAuth2 client credentials take preceden
 
 ### Configuration variables
 
-This table lists the configuration variables required to operate Analyst1. These variables are specified when configuring a Analyst1 asset in Splunk SOAR.
+This table lists the configuration variables required to operate Analyst1 for Splunk SOAR. These variables are specified when configuring a Analyst1 asset in Splunk SOAR.
 
 VARIABLE | REQUIRED | TYPE | DESCRIPTION
 -------- | -------- | ---- | -----------
