@@ -1279,6 +1279,7 @@ def display_indicators_view(outputs: list[IndicatorOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of a domain in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1291,6 +1292,7 @@ def lookup_domain(params: LookupDomainParams, soar: SOARClient, asset: Asset) ->
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of an email in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1303,6 +1305,7 @@ def lookup_email(params: LookupEmailParams, soar: SOARClient, asset: Asset) -> l
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of a hash in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1315,6 +1318,7 @@ def lookup_hash(params: LookupHashParams, soar: SOARClient, asset: Asset) -> lis
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of a string in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1327,6 +1331,7 @@ def lookup_string(params: LookupStringParams, soar: SOARClient, asset: Asset) ->
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of an IP in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1350,6 +1355,7 @@ def lookup_ip(params: LookupIpParams, soar: SOARClient, asset: Asset) -> list[Ip
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of an IPv6 in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1362,6 +1368,7 @@ def lookup_ipv6(params: LookupIpv6Params, soar: SOARClient, asset: Asset) -> lis
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of a URL in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1374,6 +1381,7 @@ def lookup_url(params: LookupUrlParams, soar: SOARClient, asset: Asset) -> list[
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of a mutex in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1386,6 +1394,7 @@ def lookup_mutex(params: LookupMutexParams, soar: SOARClient, asset: Asset) -> l
 
 
 @app.action(
+    read_only=True,
     description="Check for the presence of an HTTP request in the Analyst1 platform",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1483,6 +1492,7 @@ def display_batch_results_view(outputs: list[BatchCheckResultOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Check a batch of indicator values (type auto-detected) against the Analyst1 platform",
     action_type="investigate",
     view_handler=display_batch_results_view,
@@ -1532,6 +1542,7 @@ class GetIndicatorByIdParams(Params):
 
 
 @app.action(
+    read_only=True,
     description="Fetch an indicator from the Analyst1 platform by its Analyst1 ID",
     action_type="investigate",
     view_handler=display_indicators_view,
@@ -1666,6 +1677,7 @@ def display_actor_view(outputs: list[ActorResourceOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Fetch an actor from the Analyst1 platform by its Analyst1 ID",
     action_type="investigate",
     view_handler=display_actor_view,
@@ -1743,6 +1755,7 @@ def display_malware_view(outputs: list[MalwareResourceOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Fetch a malware family from the Analyst1 platform by its Analyst1 ID",
     action_type="investigate",
     view_handler=display_malware_view,
@@ -1978,6 +1991,7 @@ def display_evidence_status_view(outputs: list[CheckEvidenceStatusOutput]) -> di
 
 
 @app.action(
+    read_only=True,
     description="Check the status of an evidence file upload",
     action_type="generic",
     view_handler=display_evidence_status_view,
@@ -2182,6 +2196,7 @@ def display_evidence_list_view(outputs: list[EvidenceItemOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Browse and fetch evidence resources.",
     action_type="investigate",
     view_handler=display_evidence_list_view,
@@ -2406,6 +2421,7 @@ def display_sensors_view(outputs: list[SensorOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Browse and fetch sensors from the Analyst1 platform",
     action_type="investigate",
     view_handler=display_sensors_view,
@@ -2564,6 +2580,7 @@ def display_sensor_taskings_view(outputs: list[SensorTaskingsOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Fetch the indicators and rules currently tasked to an Analyst1 sensor",
     action_type="investigate",
     view_handler=display_sensor_taskings_view,
@@ -2632,6 +2649,7 @@ def display_sensor_config_view(outputs: list[SensorConfigOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Fetch an Analyst1 sensor's current configuration file and store it in the vault",
     action_type="investigate",
     view_handler=display_sensor_config_view,
@@ -2732,6 +2750,7 @@ def display_sensor_diff_view(outputs: list[SensorDiffOutput]) -> dict:
 
 
 @app.action(
+    read_only=True,
     description="Fetch the tasking differences between an Analyst1 sensor config version and the latest version",
     action_type="investigate",
     view_handler=display_sensor_diff_view,
